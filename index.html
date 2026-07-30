@@ -502,6 +502,8 @@ function showApp(){
   const cu = getCurrentUser();
   const lbl = document.getElementById('currentUserLabel');
   if(lbl) lbl.textContent = cu ? ('مرحبًا، '+cu.displayName) : '';
+  const btnMU = document.getElementById('btnManageUsers');
+  if(btnMU) btnMU.style.display = (cu && cu.role==='admin') ? '' : 'none';
 }
 
 function showLogin(){
@@ -1794,6 +1796,8 @@ function openLeaveAdjustModal(id){
 
 /* ===================== إدارة المستخدمين ===================== */
 function openUsersModal(){
+  const cu = getCurrentUser();
+  if(!cu || cu.role!=='admin'){ toast('هذه الصفحة متاحة للمدير فقط','error'); return; }
   renderUsersModal();
 }
 function renderUsersModal(editingId){
