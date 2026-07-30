@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 
 :root{
@@ -365,6 +366,14 @@ td.num,th.num{font-family:var(--font-mono);direction:ltr;text-align:left;}
 </head>
 <body>
 
+<div class="login-screen" id="syncScreen">
+  <div class="login-card" style="text-align:center;">
+    <div class="login-logo" style="margin:0 auto 14px;">HR</div>
+    <h2>جاري تحميل البيانات...</h2>
+    <p class="sub">بيتم الاتصال بقاعدة البيانات المشتركة</p>
+  </div>
+</div>
+
 <div class="login-screen" id="setupScreen" style="display:none;">
   <div class="login-card">
     <div class="login-logo">HR</div>
@@ -392,7 +401,7 @@ td.num,th.num{font-family:var(--font-mono);direction:ltr;text-align:left;}
   </div>
 </div>
 
-<div class="login-screen" id="loginScreen">
+<div class="login-screen" id="loginScreen" style="display:none;">
   <div class="login-card">
     <div class="login-logo">HR</div>
     <h2>نظام الموارد البشرية</h2>
@@ -467,6 +476,54 @@ const AUTH_SESSION_KEY = 'hris_auth_session_v1';
 const CURRENT_USER_KEY = 'hris_current_user_v1';
 const DEFAULT_USERS = [];
 
+/* ===================== إعدادات Supabase (قاعدة البيانات المشتركة) =====================
+   1) أنشئ مشروع مجاني على supabase.com
+   2) نفّذ كود SQL الموجود في ملف supabase-setup.sql (المرفق) داخل SQL Editor بمشروعك
+   3) من Project Settings > API انسخ القيمتين تحت وحطهم مكان القيم الحالية
+*/
+const SUPABASE_URL = 'https://ctmfycptpbifywzefuxz.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN0bWZ5Y3B0cGJpZnl3emVmdXh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0MDc2MTgsImV4cCI6MjEwMDk4MzYxOH0.ZJ23ArvohOwa7Zk-iA6VAjuNDcBD6L82NtUakUOt3C0';
+const SUPABASE_READY = SUPABASE_URL.indexOf('YOUR_SUPABASE') === -1 && SUPABASE_ANON_KEY.indexOf('YOUR_SUPABASE') === -1;
+const sb = SUPABASE_READY ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+/* قراءة/كتابة صف واحد بمعرّف id من جدول hr_store (المشترك بين كل المستخدمين) */
+async function sbFetchRow(id){
+  if(!sb) return undefined; // undefined = مفيش اتصال بقاعدة البيانات، استخدم النسخة المحلية
+  try{
+    const { data, error } = await sb.from('hr_store').select('data').eq('id', id).maybeSingle();
+    if(error) throw error;
+    return data ? data.data : null; // null = متصل لكن الصف لسه فاضي
+  }catch(e){
+    console.warn('تعذر الاتصال بـ Supabase، هيتم الاعتماد على النسخة المحلية مؤقتًا', e);
+    return undefined;
+  }
+}
+async function sbPushRow(id, value){
+  if(!sb) return;
+  try{
+    await sb.from('hr_store').upsert({ id:id, data:value, updated_at:new Date().toISOString() });
+  }catch(e){
+    console.warn('تعذر رفع آخر تعديل إلى Supabase، هيتم إعادة المحاولة مع أي تعديل جديد', e);
+  }
+}
+/* الاستماع للتغييرات اللي بيعملها مستخدمون تانيين وتحديث الشاشة أوتوماتيك */
+function sbSubscribe(){
+  if(!sb) return;
+  sb.channel('hr_store_live')
+    .on('postgres_changes', { event:'*', schema:'public', table:'hr_store' }, function(payload){
+      const row = payload.new;
+      if(!row) return;
+      if(row.id === 'state'){
+        STATE = row.data;
+        try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE)); }catch(e){}
+        renderCompanyBar(); renderModule();
+      } else if(row.id === 'users'){
+        try{ localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(row.data)); }catch(e){}
+      }
+    })
+    .subscribe();
+}
+
 function getUsers(){
   try{
     const raw = localStorage.getItem(AUTH_STORAGE_KEY);
@@ -480,6 +537,7 @@ function getUsers(){
 
 function saveUsers(list){
   localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(list));
+  sbPushRow('users', list);
 }
 
 function getCurrentUser(){
@@ -533,8 +591,30 @@ function attachPasswordToggle(btn){
   });
 }
 
-function setupAuth(){
+async function syncUsersAndStateFromSupabase(){
+  const [remoteUsers, remoteState] = await Promise.all([ sbFetchRow('users'), sbFetchRow('state') ]);
+  if(remoteUsers !== undefined && remoteUsers !== null){
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(remoteUsers));
+  } else if(remoteUsers === null && getUsers().length){
+    /* الجدول موجود لكن فاضي، وعندنا مستخدمين محليين (أول مرة) — نرفعهم كنسخة مشتركة أولى */
+    sbPushRow('users', getUsers());
+  }
+  if(remoteState !== undefined && remoteState !== null){
+    STATE = remoteState;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE));
+  } else if(remoteState === null){
+    sbPushRow('state', STATE);
+  }
+  sbSubscribe();
+}
+
+async function setupAuth(){
   document.querySelectorAll('.pw-toggle').forEach(attachPasswordToggle);
+
+  if(SUPABASE_READY){
+    try{ await syncUsersAndStateFromSupabase(); }catch(e){ console.warn('فشلت المزامنة الأولى، سيتم العمل بالنسخة المحلية', e); }
+  }
+  document.getElementById('syncScreen').style.display = 'none';
 
   document.getElementById('setupForm').addEventListener('submit', function(ev){
     ev.preventDefault();
@@ -816,6 +896,7 @@ function runMigrations(data){
 function persistState(state){
   try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
   catch(e){ toast('تعذر حفظ البيانات محلياً — المساحة المحلية ممتلئة', 'error'); }
+  sbPushRow('state', state);
 }
 
 function loadState(){
