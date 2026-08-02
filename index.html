@@ -532,39 +532,33 @@ function sbSubscribe(){
         try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE)); }catch(e){}
         renderCompanyBar(); renderModule();
         toast('تم تحديث البيانات بواسطة مستخدم آخر');
-      } else if(row.id === 'users'){
-        try{ localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(row.data)); }catch(e){}
       }
     })
     .subscribe();
 }
 
-function getUsers(){
-  try{
-    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
-    if(raw){
-      const parsed = JSON.parse(raw);
-      if(Array.isArray(parsed)) return parsed;
-    }
-  }catch(e){}
-  return DEFAULT_USERS.slice();
+/* ===================== نظام دخول حقيقي عبر Supabase Auth =====================
+   بنستخدم اسم المستخدم زي ما هو في الواجهة، لكن تحت الغطاء بنحوّله لإيميل وهمي
+   (username@hr-app.local) عشان نستخدم نظام الدخول الآمن الجاهز في Supabase
+   بدل ما نخزن كلمة المرور في جدول عادي أي حد معاه anon key يقدر يقراه. */
+function usernameToEmail(username){
+  return username.trim().toLowerCase().replace(/[^a-z0-9_.\-]+/g,'_') + '@hr-app.local';
 }
 
-function saveUsers(list){
-  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(list));
-  sbPushRow('users', list);
+let CURRENT_PROFILE = null; /* بيانات المستخدم المسجل دخوله حاليًا (من جدول profiles) */
+
+async function fetchMyProfile(){
+  if(!sb) return null;
+  const { data: userRes } = await sb.auth.getUser();
+  const user = userRes && userRes.user;
+  if(!user) return null;
+  const { data, error } = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
+  if(error){ console.warn('تعذر جلب بيانات المستخدم', error); return null; }
+  return data;
 }
 
 function getCurrentUser(){
-  try{
-    const raw = sessionStorage.getItem(CURRENT_USER_KEY) || localStorage.getItem(CURRENT_USER_KEY);
-    if(raw) return JSON.parse(raw);
-  }catch(e){}
-  return null;
-}
-
-function isAuthenticated(){
-  return sessionStorage.getItem(AUTH_SESSION_KEY) === '1' || localStorage.getItem(AUTH_SESSION_KEY) === '1';
+  return CURRENT_PROFILE;
 }
 
 function showApp(){
@@ -574,7 +568,7 @@ function showApp(){
   init();
   const cu = getCurrentUser();
   const lbl = document.getElementById('currentUserLabel');
-  if(lbl) lbl.textContent = cu ? ('مرحبًا، '+cu.displayName) : '';
+  if(lbl) lbl.textContent = cu ? ('مرحبًا، '+(cu.display_name||cu.username)) : '';
   const btnMU = document.getElementById('btnManageUsers');
   if(btnMU) btnMU.style.display = (cu && cu.role==='admin') ? '' : 'none';
 }
@@ -606,14 +600,8 @@ function attachPasswordToggle(btn){
   });
 }
 
-async function syncUsersAndStateFromSupabase(){
-  const [remoteUsers, remoteState] = await Promise.all([ sbFetchRow('users'), sbFetchRow('state') ]);
-  if(remoteUsers !== undefined && remoteUsers !== null){
-    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(remoteUsers));
-  } else if(remoteUsers === null && getUsers().length){
-    /* الجدول موجود لكن فاضي، وعندنا مستخدمين محليين (أول مرة) — نرفعهم كنسخة مشتركة أولى */
-    sbPushRow('users', getUsers());
-  }
+async function syncStateFromSupabase(){
+  const remoteState = await sbFetchRow('state');
   if(remoteState !== undefined && remoteState !== null){
     STATE = remoteState;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE));
@@ -626,12 +614,16 @@ async function syncUsersAndStateFromSupabase(){
 async function setupAuth(){
   document.querySelectorAll('.pw-toggle').forEach(attachPasswordToggle);
 
-  if(SUPABASE_READY){
-    try{ await syncUsersAndStateFromSupabase(); }catch(e){ console.warn('فشلت المزامنة الأولى، سيتم العمل بالنسخة المحلية', e); }
+  if(!sb){
+    /* مفيش اتصال بـ Supabase — منقدرش نتحقق من هوية حقيقية، نمنع الدخول بدل ما نفتح البرنامج من غير حماية */
+    document.getElementById('syncScreen').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('loginError').textContent = 'لا يوجد اتصال بخادم الدخول حاليًا، تحقق من الإنترنت وأعد تحميل الصفحة';
+    document.getElementById('loginError').classList.add('show');
+    return;
   }
-  document.getElementById('syncScreen').style.display = 'none';
 
-  document.getElementById('setupForm').addEventListener('submit', function(ev){
+  document.getElementById('setupForm').addEventListener('submit', async function(ev){
     ev.preventDefault();
     const username = document.getElementById('setupUsername').value.trim();
     const pass = document.getElementById('setupPassword').value;
@@ -642,44 +634,73 @@ async function setupAuth(){
       err.classList.add('show');
       return;
     }
+    if(pass.length < 6){
+      err.textContent = 'كلمة المرور لازم تكون 6 حروف/أرقام على الأقل';
+      err.classList.add('show');
+      return;
+    }
     if(pass !== pass2){
       err.textContent = 'كلمة المرور وتأكيدها غير متطابقين';
       err.classList.add('show');
       return;
     }
     err.classList.remove('show');
-    const newUser = { id:uid('user'), displayName:username, username:username, password:pass, role:'admin' };
-    saveUsers([newUser]);
-    const sessionUser = JSON.stringify({ id:newUser.id, username:newUser.username, displayName:newUser.displayName, role:newUser.role });
-    sessionStorage.setItem(AUTH_SESSION_KEY, '1');
-    sessionStorage.setItem(CURRENT_USER_KEY, sessionUser);
+    const { data, error } = await sb.auth.signUp({
+      email: usernameToEmail(username),
+      password: pass,
+      options: { data: { displayName: username, username: username, role: 'admin' } }
+    });
+    if(error || !data.session){
+      err.textContent = error ? ('تعذر إنشاء الحساب: '+error.message) : 'تعذر إنشاء الحساب — تأكد إن "Confirm email" متوقف من إعدادات Supabase';
+      err.classList.add('show');
+      return;
+    }
+    CURRENT_PROFILE = await fetchMyProfile();
+    await syncStateFromSupabase();
     showApp();
   });
 
-  document.getElementById('loginForm').addEventListener('submit', function(ev){
+  document.getElementById('loginForm').addEventListener('submit', async function(ev){
     ev.preventDefault();
     const user = document.getElementById('loginUser').value.trim();
     const pass = document.getElementById('loginPass').value;
-    const remember = document.getElementById('loginRemember').checked;
-    const match = getUsers().find(function(u){ return u.username === user && u.password === pass; });
-    if(match){
-      const sessionUser = JSON.stringify({ id:match.id, username:match.username, displayName:match.displayName, role:match.role });
-      sessionStorage.setItem(AUTH_SESSION_KEY, '1');
-      sessionStorage.setItem(CURRENT_USER_KEY, sessionUser);
-      if(remember){
-        localStorage.setItem(AUTH_SESSION_KEY, '1');
-        localStorage.setItem(CURRENT_USER_KEY, sessionUser);
-      }
-      showApp();
-    } else {
-      document.getElementById('loginError').classList.add('show');
+    const errBox = document.getElementById('loginError');
+    errBox.classList.remove('show');
+    const { data, error } = await sb.auth.signInWithPassword({ email: usernameToEmail(user), password: pass });
+    if(error || !data.session){
+      errBox.textContent = 'اسم المستخدم أو كلمة المرور غير صحيحة';
+      errBox.classList.add('show');
+      return;
     }
+    CURRENT_PROFILE = await fetchMyProfile();
+    if(!CURRENT_PROFILE){
+      await sb.auth.signOut();
+      errBox.textContent = 'تم إلغاء صلاحية وصولك لهذا البرنامج، تواصل مع المدير';
+      errBox.classList.add('show');
+      return;
+    }
+    await syncStateFromSupabase();
+    showApp();
   });
 
-  if(getUsers().length === 0){
+  /* هل فيه جلسة دخول محفوظة بالفعل (Supabase بيحفظها تلقائيًا)؟ */
+  const { data: sessionRes } = await sb.auth.getSession();
+  if(sessionRes && sessionRes.session){
+    CURRENT_PROFILE = await fetchMyProfile();
+    if(CURRENT_PROFILE){
+      await syncStateFromSupabase();
+      document.getElementById('syncScreen').style.display = 'none';
+      showApp();
+      return;
+    }
+    /* الجلسة موجودة لكن مفيش صلاحية وصول (اتلغت) */
+    await sb.auth.signOut();
+  }
+  document.getElementById('syncScreen').style.display = 'none';
+  /* هل فيه أي حساب مسجّل أصلاً على البرنامج؟ */
+  const { count } = await sb.from('profiles').select('id', { count:'exact', head:true });
+  if(!count){
     showSetup();
-  } else if(isAuthenticated()){
-    showApp();
   } else {
     showLogin();
   }
@@ -1902,26 +1923,38 @@ function openUsersModal(){
   if(!cu || cu.role!=='admin'){ toast('هذه الصفحة متاحة للمدير فقط','error'); return; }
   renderUsersModal();
 }
-function renderUsersModal(editingId){
-  const users = getUsers();
+async function loadAllProfiles(){
+  const { data, error } = await sb.from('profiles').select('*').order('created_at', { ascending:true });
+  if(error){ console.warn('تعذر تحميل قائمة المستخدمين', error); return []; }
+  return data || [];
+}
+async function renderUsersModal(editingId){
+  const users = await loadAllProfiles();
   const editing = editingId ? users.find(function(u){ return u.id===editingId; }) : null;
+  const cu = getCurrentUser();
   const rows = users.map(function(u){
     return '<tr>'
-      + '<td>'+escapeHtml(u.displayName||'')+'</td>'
-      + '<td class="mono">'+escapeHtml(u.username)+'</td>'
+      + '<td>'+escapeHtml(u.display_name||'')+'</td>'
+      + '<td class="mono">'+escapeHtml(u.username||'')+'</td>'
       + '<td>'+(u.role==='admin'?'مدير':'مستخدم')+'</td>'
       + '<td style="white-space:nowrap;">'
       + '<button class="btn ghost sm" data-edit-user="'+u.id+'">تعديل</button> '
-      + '<button class="btn ghost sm" data-del-user="'+u.id+'">حذف</button>'
+      + (u.id===cu.id ? '' : '<button class="btn ghost sm" data-del-user="'+u.id+'">إلغاء الصلاحية</button>')
       + '</td></tr>';
   }).join('');
-  const formHtml = '<div class="field"><label>الاسم الظاهر</label><input id="userDisplayName" value="'+(editing?escapeHtml(editing.displayName||''):'')+'" placeholder="مثال: محمد أحمد"></div>'
-    + '<div class="field"><label>اسم المستخدم</label><input id="userUsername" value="'+(editing?escapeHtml(editing.username):'')+'" placeholder="مثال: mohamed"></div>'
-    + '<div class="field"><label>كلمة المرور</label><div class="pw-field"><input id="userPassword" type="password" value="" placeholder="'+(editing?'اتركه فارغًا لعدم التغيير':'كلمة مرور جديدة')+'"><button type="button" class="pw-toggle" data-toggle-for="userPassword">👁</button></div></div>'
-    + '<div class="field"><label>الصلاحية</label><select id="userRole">'
-    + '<option value="user"'+(editing&&editing.role!=='admin'?' selected':'')+'>مستخدم</option>'
-    + '<option value="admin"'+(editing&&editing.role==='admin'?' selected':'')+'>مدير</option>'
-    + '</select></div>';
+  const formHtml = editing
+    ? ('<div class="field"><label>الاسم الظاهر</label><input id="userDisplayName" value="'+escapeHtml(editing.display_name||'')+'"></div>'
+      + '<div class="field"><label>الصلاحية</label><select id="userRole">'
+      + '<option value="user"'+(editing.role!=='admin'?' selected':'')+'>مستخدم</option>'
+      + '<option value="admin"'+(editing.role==='admin'?' selected':'')+'>مدير</option>'
+      + '</select></div>'
+      + '<div class="hint">تغيير كلمة مرور مستخدم تاني أو حذف حسابه نهائيًا بيتم من Supabase Dashboard ← Authentication ← Users مباشرة (ده احتياط أمني، حتى المدير من داخل البرنامج منعرفش نغيّر كلمة سر حد تاني).</div>')
+    : ('<div class="field"><label>الاسم الظاهر</label><input id="userDisplayName" placeholder="مثال: محمد أحمد"></div>'
+      + '<div class="field"><label>اسم المستخدم (للدخول)</label><input id="userUsername" placeholder="مثال: mohamed"></div>'
+      + '<div class="field"><label>كلمة المرور</label><div class="pw-field"><input id="userPassword" type="password" placeholder="كلمة مرور جديدة (6 حروف على الأقل)"><button type="button" class="pw-toggle" data-toggle-for="userPassword">👁</button></div></div>'
+      + '<div class="field"><label>الصلاحية</label><select id="userRole">'
+      + '<option value="user">مستخدم</option><option value="admin">مدير</option>'
+      + '</select></div>');
   const html = '<div class="overlay" id="usersOverlay"><div class="modal wide">'
     + '<div class="modal-head"><h3>إدارة المستخدمين</h3><button class="modal-close" id="btnCloseUsers">✕</button></div>'
     + '<div class="modal-body">'
@@ -1941,41 +1974,44 @@ function renderUsersModal(editingId){
     btn.addEventListener('click', function(){ renderUsersModal(btn.dataset.editUser); });
   });
   document.querySelectorAll('[data-del-user]').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      const list = getUsers();
-      if(list.length <= 1){ toast('لا يمكن حذف آخر مستخدم في النظام','error'); return; }
+    btn.addEventListener('click', async function(){
       const id = btn.dataset.delUser;
-      const target = list.find(function(u){ return u.id===id; });
-      const cu = getCurrentUser();
-      if(cu && cu.id===id){ toast('لا يمكنك حذف المستخدم المسجل به دخولك حاليًا','error'); return; }
-      const updated = list.filter(function(u){ return u.id!==id; });
-      saveUsers(updated);
-      toast('تم حذف المستخدم '+(target?target.displayName:''));
+      const target = users.find(function(u){ return u.id===id; });
+      if(!confirm('متأكد إنك عايز تلغي صلاحية "'+(target?target.display_name:'')+'"؟ (الحساب هيتقفل من البرنامج، وتقدر تحذفه نهائيًا من Supabase لو حبيت)')) return;
+      const { error } = await sb.from('profiles').delete().eq('id', id);
+      if(error){ toast('تعذر إلغاء الصلاحية: '+error.message, 'error'); return; }
+      toast('تم إلغاء صلاحية المستخدم '+(target?target.display_name:''));
       renderUsersModal();
     });
   });
   const cancelBtn = document.getElementById('btnCancelEditUser');
   if(cancelBtn) cancelBtn.addEventListener('click', function(){ renderUsersModal(); });
-  document.getElementById('btnSaveUser').addEventListener('click', function(){
+  document.getElementById('btnSaveUser').addEventListener('click', async function(){
+    const role = document.getElementById('userRole').value;
+    if(editing){
+      const displayName = document.getElementById('userDisplayName').value.trim();
+      if(!displayName){ toast('برجاء إدخال الاسم','error'); return; }
+      const { error } = await sb.from('profiles').update({ display_name:displayName, role:role }).eq('id', editing.id);
+      if(error){ toast('تعذر الحفظ: '+error.message, 'error'); return; }
+      if(editing.id===cu.id) CURRENT_PROFILE = await fetchMyProfile();
+      toast('تم تحديث بيانات المستخدم');
+      renderUsersModal();
+      return;
+    }
     const displayName = document.getElementById('userDisplayName').value.trim();
     const username = document.getElementById('userUsername').value.trim();
     const password = document.getElementById('userPassword').value;
-    const role = document.getElementById('userRole').value;
     if(!displayName || !username){ toast('برجاء إدخال الاسم واسم المستخدم','error'); return; }
-    const list = getUsers();
-    const dup = list.find(function(u){ return u.username===username && (!editing || u.id!==editing.id); });
-    if(dup){ toast('اسم المستخدم مستخدم بالفعل','error'); return; }
-    if(editing){
-      const idx = list.findIndex(function(u){ return u.id===editing.id; });
-      list[idx] = { id:editing.id, displayName:displayName, username:username, password: password ? password : editing.password, role:role };
-      saveUsers(list);
-      toast('تم تحديث بيانات المستخدم');
-    } else {
-      if(!password){ toast('برجاء إدخال كلمة مرور','error'); return; }
-      list.push({ id:uid('user'), displayName:displayName, username:username, password:password, role:role });
-      saveUsers(list);
-      toast('تمت إضافة المستخدم');
-    }
+    if(!password || password.length < 6){ toast('كلمة المرور لازم تكون 6 حروف/أرقام على الأقل','error'); return; }
+    /* بنستخدم اتصال منفصل ومؤقت مخصوص لإنشاء الحساب الجديد، عشان ميبدلش جلسة دخولك انت الحالية */
+    const tempClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth:{ persistSession:false, autoRefreshToken:false } });
+    const { error } = await tempClient.auth.signUp({
+      email: usernameToEmail(username),
+      password: password,
+      options: { data:{ displayName:displayName, username:username, role:role } }
+    });
+    if(error){ toast('تعذر إنشاء المستخدم: '+error.message, 'error'); return; }
+    toast('تمت إضافة المستخدم');
     renderUsersModal();
   });
 }
@@ -2591,11 +2627,9 @@ function init(){
   const btnLogout = document.getElementById('btnLogout');
   if(btnLogout && !btnLogout.dataset.bound){
     btnLogout.dataset.bound = '1';
-    btnLogout.addEventListener('click', function(){
-      sessionStorage.removeItem(AUTH_SESSION_KEY);
-      sessionStorage.removeItem(CURRENT_USER_KEY);
-      localStorage.removeItem(AUTH_SESSION_KEY);
-      localStorage.removeItem(CURRENT_USER_KEY);
+    btnLogout.addEventListener('click', async function(){
+      if(sb) await sb.auth.signOut();
+      CURRENT_PROFILE = null;
       showLogin();
     });
   }
