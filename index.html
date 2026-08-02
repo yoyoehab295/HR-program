@@ -471,10 +471,6 @@ const SEED_DATA_RAW = {"Biotech Pharma":[{"sr":1,"name":"محمد السيد م�
 const COMPANY_COLORS = ['#0E4F49','#8B4B9C','#B3661E','#1D6FA5','#6B7C1D','#A5303F','#3C6E71','#9C4221'];
 const DB_VERSION = 7;
 const STORAGE_KEY = 'hris_data_v1';
-const AUTH_STORAGE_KEY = 'hris_auth_v1';
-const AUTH_SESSION_KEY = 'hris_auth_session_v1';
-const CURRENT_USER_KEY = 'hris_current_user_v1';
-const DEFAULT_USERS = [];
 
 /* ===================== إعدادات Supabase (قاعدة البيانات المشتركة) =====================
    1) أنشئ مشروع مجاني على supabase.com
@@ -484,6 +480,7 @@ const DEFAULT_USERS = [];
 const SUPABASE_URL = 'https://ctmfycptpbifywzefuxz.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN0bWZ5Y3B0cGJpZnl3emVmdXh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0MDc2MTgsImV4cCI6MjEwMDk4MzYxOH0.ZJ23ArvohOwa7Zk-iA6VAjuNDcBD6L82NtUakUOt3C0';
 const SUPABASE_READY = SUPABASE_URL.indexOf('YOUR_SUPABASE') === -1 && SUPABASE_ANON_KEY.indexOf('YOUR_SUPABASE') === -1;
+const DOCS_BUCKET = 'employee-documents';
 const sb = SUPABASE_READY ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 /* بصمة فريدة لكل تبويب/جهاز مفتوح، بنستخدمها عشان نتجاهل صدى تعديلاتنا احنا الراجع من Realtime
    ولا نمسح فوق تعديل أحدث كنا عملناه محليًا (سبب اختفاء البيانات بعد الحفظ) */
@@ -1678,8 +1675,8 @@ function employeeDocsTab(e){
       + '<button class="icon-btn" data-doc-del="'+d.id+'" title="حذف">✕</button></div>';
   }).join('') || '<div class="empty-note">لا توجد مستندات مرفقة</div>';
   return '<div class="doc-list">'+docs+'</div>'
-    + '<div class="upload-drop" id="docUploadZone">اضغط لرفع مستند (PDF أو صورة، أقل من 1 ميجابايت)</div>'
-    + '<div class="hint" style="margin-top:8px">المستندات تُخزَّن محلياً داخل المتصفح — لو عدد الملفات كبير يُفضّل الانتقال لتخزين سحابي لاحقاً</div>';
+    + '<div class="upload-drop" id="docUploadZone">اضغط لرفع مستند (PDF أو صورة، أقل من 10 ميجابايت)</div>'
+    + '<div class="hint" style="margin-top:8px">المستندات تُخزَّن على تخزين سحابي مشترك (Supabase Storage) — متاحة لكل المستخدمين من أي جهاز</div>';
 }
 function renderEmployeeModal(){
   const isNew = !UI.editingId;
@@ -1811,15 +1808,21 @@ function bindModalEvents(e, isNew){
   document.querySelectorAll('[data-doc-del]').forEach(function(b){
     b.addEventListener('click', function(){
       const real = STATE.employees.find(function(x){ return x.id===e.id; });
-      if(real){ real.documents = real.documents.filter(function(d){ return d.id!==b.dataset.docDel; }); persistState(STATE); }
+      if(!real) return;
+      const doc = real.documents.find(function(d){ return d.id===b.dataset.docDel; });
+      real.documents = real.documents.filter(function(d){ return d.id!==b.dataset.docDel; });
+      persistState(STATE);
       renderEmployeeModal();
+      if(doc && doc.path && sb){
+        sb.storage.from(DOCS_BUCKET).remove([doc.path]).catch(function(err){ console.warn('تعذر حذف الملف من التخزين السحابي', err); });
+      }
     });
   });
   document.querySelectorAll('[data-doc-view]').forEach(function(b){
     b.addEventListener('click', function(){
       const real = STATE.employees.find(function(x){ return x.id===e.id; });
       const d = real ? real.documents.find(function(x){ return x.id===b.dataset.docView; }) : null;
-      if(d) window.open(d.dataUrl, '_blank');
+      if(d) window.open(d.url || d.dataUrl, '_blank');
     });
   });
 }
@@ -2601,20 +2604,41 @@ function init(){
     btnManageUsers.dataset.bound = '1';
     btnManageUsers.addEventListener('click', openUsersModal);
   }
-  document.getElementById('fileDocUpload').addEventListener('change', function(ev){
+  document.getElementById('fileDocUpload').addEventListener('change', async function(ev){
     const file = ev.target.files[0];
     if(!file || !pendingDocEmployee){ ev.target.value=''; return; }
-    if(file.size > 1024*1024){ toast('حجم الملف أكبر من 1 ميجابايت — برجاء ملف أصغر','error'); ev.target.value=''; return; }
+    if(file.size > 10*1024*1024){ toast('حجم الملف أكبر من 10 ميجابايت — برجاء ملف أصغر','error'); ev.target.value=''; return; }
+    const empId = pendingDocEmployee;
+    const real = STATE.employees.find(function(x){ return x.id===empId; });
+    if(!real){ ev.target.value=''; return; }
+    ev.target.value = '';
+    const docId = uid('doc');
+    if(sb){
+      toast('جاري رفع المستند...');
+      try{
+        const path = empId+'/'+docId+'_'+file.name.replace(/[^\w.\-]+/g,'_');
+        const { error: upErr } = await sb.storage.from(DOCS_BUCKET).upload(path, file, { upsert:true, contentType:file.type||undefined });
+        if(upErr) throw upErr;
+        const { data:pub } = sb.storage.from(DOCS_BUCKET).getPublicUrl(path);
+        real.documents.push({id:docId, name:file.name, type:file.type, size:file.size, path:path, url:pub.publicUrl, uploadedAt:new Date().toISOString()});
+        real.updatedAt = new Date().toISOString();
+        persistState(STATE);
+        if(UI.editingId===empId) renderEmployeeModal();
+        toast('تم رفع المستند');
+      }catch(err){
+        console.warn('فشل الرفع للتخزين السحابي', err);
+        toast('تعذر رفع الملف للتخزين السحابي — تحقق من إعداد الـ bucket في Supabase', 'error');
+      }
+      return;
+    }
+    /* لا يوجد اتصال بالتخزين السحابي — نرجع للأسلوب المحلي القديم كحل احتياطي */
     const reader = new FileReader();
     reader.onload = function(){
-      const real = STATE.employees.find(function(x){ return x.id===pendingDocEmployee; });
-      if(!real){ ev.target.value=''; return; }
-      real.documents.push({id:uid('doc'), name:file.name, type:file.type, size:file.size, dataUrl:reader.result, uploadedAt:new Date().toISOString()});
+      real.documents.push({id:docId, name:file.name, type:file.type, size:file.size, dataUrl:reader.result, uploadedAt:new Date().toISOString()});
       real.updatedAt = new Date().toISOString();
       persistState(STATE);
-      if(UI.editingId===pendingDocEmployee) renderEmployeeModal();
-      toast('تم رفع المستند');
-      ev.target.value = '';
+      if(UI.editingId===empId) renderEmployeeModal();
+      toast('تم رفع المستند (تخزين محلي — لا يوجد اتصال سحابي)');
     };
     reader.readAsDataURL(file);
   });
