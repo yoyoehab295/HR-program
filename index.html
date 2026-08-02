@@ -485,6 +485,9 @@ const SUPABASE_URL = 'https://ctmfycptpbifywzefuxz.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN0bWZ5Y3B0cGJpZnl3emVmdXh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0MDc2MTgsImV4cCI6MjEwMDk4MzYxOH0.ZJ23ArvohOwa7Zk-iA6VAjuNDcBD6L82NtUakUOt3C0';
 const SUPABASE_READY = SUPABASE_URL.indexOf('YOUR_SUPABASE') === -1 && SUPABASE_ANON_KEY.indexOf('YOUR_SUPABASE') === -1;
 const sb = SUPABASE_READY ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+/* بصمة فريدة لكل تبويب/جهاز مفتوح، بنستخدمها عشان نتجاهل صدى تعديلاتنا احنا الراجع من Realtime
+   ولا نمسح فوق تعديل أحدث كنا عملناه محليًا (سبب اختفاء البيانات بعد الحفظ) */
+const CLIENT_ID = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('client_'+Math.random().toString(36).slice(2)+Date.now());
 
 /* قراءة/كتابة صف واحد بمعرّف id من جدول hr_store (المشترك بين كل المستخدمين) */
 async function sbFetchRow(id){
@@ -503,7 +506,7 @@ async function sbPushRow(id, value){
   if(!sb) return;
   PENDING_SYNC_COUNT++;
   try{
-    const { error } = await sb.from('hr_store').upsert({ id:id, data:value, updated_at:new Date().toISOString() });
+    const { error } = await sb.from('hr_store').upsert({ id:id, data:value, origin:CLIENT_ID, updated_at:new Date().toISOString() });
     if(error) throw error;
   }catch(e){
     console.warn('تعذر رفع آخر تعديل إلى Supabase', e);
@@ -526,10 +529,12 @@ function sbSubscribe(){
     .on('postgres_changes', { event:'*', schema:'public', table:'hr_store' }, function(payload){
       const row = payload.new;
       if(!row) return;
+      if(row.origin === CLIENT_ID) return; /* ده صدى تعديل احنا اللي عملناه، تجاهله عشان ميمسحش تعديل أحدث */
       if(row.id === 'state'){
         STATE = row.data;
         try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE)); }catch(e){}
         renderCompanyBar(); renderModule();
+        toast('تم تحديث البيانات بواسطة مستخدم آخر');
       } else if(row.id === 'users'){
         try{ localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(row.data)); }catch(e){}
       }
