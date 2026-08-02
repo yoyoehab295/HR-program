@@ -498,14 +498,27 @@ async function sbFetchRow(id){
     return undefined;
   }
 }
+let PENDING_SYNC_COUNT = 0;
 async function sbPushRow(id, value){
   if(!sb) return;
+  PENDING_SYNC_COUNT++;
   try{
-    await sb.from('hr_store').upsert({ id:id, data:value, updated_at:new Date().toISOString() });
+    const { error } = await sb.from('hr_store').upsert({ id:id, data:value, updated_at:new Date().toISOString() });
+    if(error) throw error;
   }catch(e){
-    console.warn('تعذر رفع آخر تعديل إلى Supabase، هيتم إعادة المحاولة مع أي تعديل جديد', e);
+    console.warn('تعذر رفع آخر تعديل إلى Supabase', e);
+    toast('⚠️ تعذر حفظ آخر تعديل على الخادم المشترك — لا تقفل الصفحة، تحقق من الإنترنت وحاول مرة أخرى', 'error');
+  }finally{
+    PENDING_SYNC_COUNT--;
   }
 }
+window.addEventListener('beforeunload', function(ev){
+  if(PENDING_SYNC_COUNT > 0){
+    ev.preventDefault();
+    ev.returnValue = 'لسه فيه تعديل بيتحفظ على الخادم، متقفلش الصفحة دلوقتي.';
+    return ev.returnValue;
+  }
+});
 /* الاستماع للتغييرات اللي بيعملها مستخدمون تانيين وتحديث الشاشة أوتوماتيك */
 function sbSubscribe(){
   if(!sb) return;
