@@ -681,6 +681,7 @@ async function setupAuth(){
     errBox.classList.remove('show');
     const { data, error } = await sb.rpc('app_login', { p_username: user, p_password: pass });
     if(error || !data || !data.length){
+      if(error) console.error('app_login error (افتح Console بـ F12 لو المشكلة اتكررت):', error);
       errBox.textContent = 'اسم المستخدم أو كلمة المرور غير صحيحة';
       errBox.classList.add('show');
       return;
