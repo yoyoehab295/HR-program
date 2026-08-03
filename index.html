@@ -447,6 +447,7 @@ td.num,th.num{font-family:var(--font-mono);direction:ltr;text-align:left;}
     <button class="btn ghost" id="btnExportExcel">تصدير Excel</button>
     <button class="btn primary" id="btnAddEmployee">+ إضافة موظف</button>
     <span id="currentUserLabel" style="color:#fff;font-size:13px;opacity:.9;margin-inline:6px;"></span>
+    <button class="btn btn-logout" id="btnChangeMyPassword">تغيير كلمة المرور</button>
     <button class="btn btn-logout" id="btnManageUsers">إدارة المستخدمين</button>
     <button class="btn btn-logout" id="btnLogout">خروج</button>
   </div>
@@ -482,6 +483,8 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const SUPABASE_READY = SUPABASE_URL.indexOf('YOUR_SUPABASE') === -1 && SUPABASE_ANON_KEY.indexOf('YOUR_SUPABASE') === -1;
 const DOCS_BUCKET = 'employee-documents';
 const sb = SUPABASE_READY ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+/* مفتاح تخزين توكن الجلسة محليًا في المتصفح (بديل جلسة Supabase Auth) */
+const SESSION_TOKEN_KEY = 'hr_app_session_token';
 /* بصمة فريدة لكل تبويب/جهاز مفتوح، بنستخدمها عشان نتجاهل صدى تعديلاتنا احنا الراجع من Realtime
    ولا نمسح فوق تعديل أحدث كنا عملناه محليًا (سبب اختفاء البيانات بعد الحفظ) */
 const CLIENT_ID = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('client_'+Math.random().toString(36).slice(2)+Date.now());
@@ -537,28 +540,41 @@ function sbSubscribe(){
     .subscribe();
 }
 
-/* ===================== نظام دخول حقيقي عبر Supabase Auth =====================
-   بنستخدم اسم المستخدم زي ما هو في الواجهة، لكن تحت الغطاء بنحوّله لإيميل وهمي
-   (username@hr-app.local) عشان نستخدم نظام الدخول الآمن الجاهز في Supabase
-   بدل ما نخزن كلمة المرور في جدول عادي أي حد معاه anon key يقدر يقراه. */
-function usernameToEmail(username){
-  return username.trim().toLowerCase().replace(/[^a-z0-9_.\-]+/g,'_') + '@hr-app.local';
+/* ===================== نظام دخول مستقل تمامًا (مش مبني على Supabase Auth) =====================
+   الباسورد بيتخزّن مشفّر (bcrypt عن طريق pgcrypto) جوه قاعدة البيانات، والتحقق منه
+   وإدارة الجلسات بيتم بالكامل جوه دوال Postgres (RPC، انظر ملف schema.sql). المتصفح
+   بيعرف بس "توكن جلسة" عشوائي (زي كوكيز الجلسة العادية)، مش بيعرف ولا يقدر يتحكم في
+   أي صلاحيات — كل قرار (هل ده مدير؟ هل التوكن لسه سليم؟) بيتاخد جوه قاعدة البيانات. */
+
+function getSavedToken(){
+  try{ return localStorage.getItem(SESSION_TOKEN_KEY); }catch(e){ return null; }
+}
+function saveToken(token){
+  try{
+    if(token) localStorage.setItem(SESSION_TOKEN_KEY, token);
+    else localStorage.removeItem(SESSION_TOKEN_KEY);
+  }catch(e){}
 }
 
-let CURRENT_PROFILE = null; /* بيانات المستخدم المسجل دخوله حاليًا (من جدول profiles) */
+let CURRENT_PROFILE = null; /* {id, username, display_name, role} بتاع المستخدم المسجل دخوله حاليًا */
 
-async function fetchMyProfile(){
-  if(!sb) return null;
-  const { data: userRes } = await sb.auth.getUser();
-  const user = userRes && userRes.user;
-  if(!user) return null;
-  const { data, error } = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
-  if(error){ console.warn('تعذر جلب بيانات المستخدم', error); return null; }
-  return data;
+async function restoreSessionFromToken(){
+  const token = getSavedToken();
+  if(!sb || !token) return null;
+  const { data, error } = await sb.rpc('app_session_user', { p_token: token });
+  if(error || !data || !data.length){ saveToken(null); return null; }
+  const row = data[0];
+  return { id: row.user_id, username: row.username, display_name: row.display_name, role: row.role };
 }
 
 function getCurrentUser(){
   return CURRENT_PROFILE;
+}
+
+function refreshCurrentUserLabel(){
+  const cu = getCurrentUser();
+  const lbl = document.getElementById('currentUserLabel');
+  if(lbl) lbl.textContent = cu ? ('مرحبًا، '+(cu.display_name||cu.username)) : '';
 }
 
 function showApp(){
@@ -567,8 +583,7 @@ function showApp(){
   document.getElementById('appRoot').style.display = '';
   init();
   const cu = getCurrentUser();
-  const lbl = document.getElementById('currentUserLabel');
-  if(lbl) lbl.textContent = cu ? ('مرحبًا، '+(cu.display_name||cu.username)) : '';
+  refreshCurrentUserLabel();
   const btnMU = document.getElementById('btnManageUsers');
   if(btnMU) btnMU.style.display = (cu && cu.role==='admin') ? '' : 'none';
 }
@@ -645,17 +660,15 @@ async function setupAuth(){
       return;
     }
     err.classList.remove('show');
-    const { data, error } = await sb.auth.signUp({
-      email: usernameToEmail(username),
-      password: pass,
-      options: { data: { displayName: username, username: username, role: 'admin' } }
-    });
-    if(error || !data.session){
-      err.textContent = error ? ('تعذر إنشاء الحساب: '+error.message) : 'تعذر إنشاء الحساب — تأكد إن "Confirm email" متوقف من إعدادات Supabase';
+    const { data, error } = await sb.rpc('app_setup_first_admin', { p_username: username, p_password: pass, p_display_name: username });
+    if(error || !data || !data.length){
+      err.textContent = 'تعذر إنشاء الحساب: '+(error?error.message:'خطأ غير معروف');
       err.classList.add('show');
       return;
     }
-    CURRENT_PROFILE = await fetchMyProfile();
+    const row = data[0];
+    saveToken(row.token);
+    CURRENT_PROFILE = { id: row.user_id, username: username, display_name: row.display_name, role: row.role };
     await syncStateFromSupabase();
     showApp();
   });
@@ -666,40 +679,32 @@ async function setupAuth(){
     const pass = document.getElementById('loginPass').value;
     const errBox = document.getElementById('loginError');
     errBox.classList.remove('show');
-    const { data, error } = await sb.auth.signInWithPassword({ email: usernameToEmail(user), password: pass });
-    if(error || !data.session){
+    const { data, error } = await sb.rpc('app_login', { p_username: user, p_password: pass });
+    if(error || !data || !data.length){
       errBox.textContent = 'اسم المستخدم أو كلمة المرور غير صحيحة';
       errBox.classList.add('show');
       return;
     }
-    CURRENT_PROFILE = await fetchMyProfile();
-    if(!CURRENT_PROFILE){
-      await sb.auth.signOut();
-      errBox.textContent = 'تم إلغاء صلاحية وصولك لهذا البرنامج، تواصل مع المدير';
-      errBox.classList.add('show');
-      return;
-    }
+    const row = data[0];
+    saveToken(row.token);
+    CURRENT_PROFILE = { id: row.user_id, username: user, display_name: row.display_name, role: row.role };
     await syncStateFromSupabase();
     showApp();
   });
 
-  /* هل فيه جلسة دخول محفوظة بالفعل (Supabase بيحفظها تلقائيًا)؟ */
-  const { data: sessionRes } = await sb.auth.getSession();
-  if(sessionRes && sessionRes.session){
-    CURRENT_PROFILE = await fetchMyProfile();
-    if(CURRENT_PROFILE){
-      await syncStateFromSupabase();
-      document.getElementById('syncScreen').style.display = 'none';
-      showApp();
-      return;
-    }
-    /* الجلسة موجودة لكن مفيش صلاحية وصول (اتلغت) */
-    await sb.auth.signOut();
+  /* هل فيه جلسة محفوظة في المتصفح من قبل؟ */
+  const restored = await restoreSessionFromToken();
+  if(restored){
+    CURRENT_PROFILE = restored;
+    await syncStateFromSupabase();
+    document.getElementById('syncScreen').style.display = 'none';
+    showApp();
+    return;
   }
   document.getElementById('syncScreen').style.display = 'none';
-  /* هل فيه أي حساب مسجّل أصلاً على البرنامج؟ */
-  const { count } = await sb.from('profiles').select('id', { count:'exact', head:true });
-  if(!count){
+  /* هل فيه مدير مفعّل بالفعل على البرنامج؟ */
+  const { data: hasUser } = await sb.rpc('app_has_any_user');
+  if(!hasUser){
     showSetup();
   } else {
     showLogin();
@@ -1917,6 +1922,35 @@ function openLeaveAdjustModal(id){
   });
 }
 
+/* ===================== تغيير كلمة المرور (للمستخدم الحالي) ===================== */
+function openChangeMyPasswordModal(){
+  const html = '<div class="overlay" id="myPwOverlay"><div class="modal" style="max-width:420px">'
+    + '<div class="modal-head"><h3>تغيير كلمة المرور</h3><button class="modal-close" id="btnCloseMyPw">✕</button></div>'
+    + '<div class="modal-body">'
+    + '<div class="field"><label>كلمة المرور الجديدة</label><div class="pw-field"><input id="myNewPassword" type="password" placeholder="6 حروف/أرقام على الأقل" autocomplete="new-password"><button type="button" class="pw-toggle" data-toggle-for="myNewPassword">👁</button></div></div>'
+    + '<div class="field"><label>تأكيد كلمة المرور</label><div class="pw-field"><input id="myNewPassword2" type="password" placeholder="أعد كتابة كلمة المرور" autocomplete="new-password"><button type="button" class="pw-toggle" data-toggle-for="myNewPassword2">👁</button></div></div>'
+    + '</div>'
+    + '<div class="modal-foot"><div></div><button class="btn primary" id="btnSaveMyPw">حفظ كلمة المرور</button></div>'
+    + '</div></div>';
+  document.getElementById('modalHost').innerHTML = html;
+  document.querySelectorAll('#myPwOverlay .pw-toggle').forEach(attachPasswordToggle);
+  document.getElementById('btnCloseMyPw').addEventListener('click', closeModal);
+  document.getElementById('myPwOverlay').addEventListener('click', function(ev){ if(ev.target.id==='myPwOverlay') closeModal(); });
+  document.getElementById('btnSaveMyPw').addEventListener('click', async function(){
+    const p1 = document.getElementById('myNewPassword').value;
+    const p2 = document.getElementById('myNewPassword2').value;
+    if(!p1 || p1.length < 6){ toast('كلمة المرور لازم تكون 6 حروف/أرقام على الأقل','error'); return; }
+    if(p1 !== p2){ toast('كلمة المرور وتأكيدها غير متطابقين','error'); return; }
+    const btn = document.getElementById('btnSaveMyPw');
+    btn.disabled = true; btn.textContent = 'جارٍ الحفظ...';
+    const { error } = await sb.rpc('app_change_own_password', { p_token: getSavedToken(), p_new_password: p1 });
+    btn.disabled = false; btn.textContent = 'حفظ كلمة المرور';
+    if(error){ toast('تعذر تغيير كلمة المرور: '+error.message, 'error'); return; }
+    toast('تم تغيير كلمة المرور بنجاح');
+    closeModal();
+  });
+}
+
 /* ===================== إدارة المستخدمين ===================== */
 function openUsersModal(){
   const cu = getCurrentUser();
@@ -1924,7 +1958,7 @@ function openUsersModal(){
   renderUsersModal();
 }
 async function loadAllProfiles(){
-  const { data, error } = await sb.from('profiles').select('*').order('created_at', { ascending:true });
+  const { data, error } = await sb.rpc('app_admin_list_users', { p_token: getSavedToken() });
   if(error){ console.warn('تعذر تحميل قائمة المستخدمين', error); return []; }
   return data || [];
 }
@@ -1948,7 +1982,12 @@ async function renderUsersModal(editingId){
       + '<option value="user"'+(editing.role!=='admin'?' selected':'')+'>مستخدم</option>'
       + '<option value="admin"'+(editing.role==='admin'?' selected':'')+'>مدير</option>'
       + '</select></div>'
-      + '<div class="hint">تغيير كلمة مرور مستخدم تاني أو حذف حسابه نهائيًا بيتم من Supabase Dashboard ← Authentication ← Users مباشرة (ده احتياط أمني، حتى المدير من داخل البرنامج منعرفش نغيّر كلمة سر حد تاني).</div>')
+      + '<hr style="margin:16px 0;border:none;border-top:1px solid var(--border);">'
+      + '<div class="field"><label>تعيين كلمة مرور جديدة (في حالة النسيان)</label>'
+      + '<div class="pw-field"><input id="userResetPassword" type="password" placeholder="6 حروف/أرقام على الأقل" autocomplete="new-password"><button type="button" class="pw-toggle" data-toggle-for="userResetPassword">👁</button></div>'
+      + '<button class="btn ghost sm" id="btnResetUserPassword" style="margin-top:8px;">تعيين كلمة المرور</button>'
+      + '<div class="hint">هيتم تغيير كلمة مرور المستخدم فورًا. محتاج تبلّغه بالكلمة الجديدة بنفسك (مفيش إيميل هيتبعت).</div>'
+      + '</div>')
     : ('<div class="field"><label>الاسم الظاهر</label><input id="userDisplayName" placeholder="مثال: محمد أحمد"></div>'
       + '<div class="field"><label>اسم المستخدم (للدخول)</label><input id="userUsername" placeholder="مثال: mohamed"></div>'
       + '<div class="field"><label>كلمة المرور</label><div class="pw-field"><input id="userPassword" type="password" placeholder="كلمة مرور جديدة (6 حروف على الأقل)"><button type="button" class="pw-toggle" data-toggle-for="userPassword">👁</button></div></div>'
@@ -1977,8 +2016,8 @@ async function renderUsersModal(editingId){
     btn.addEventListener('click', async function(){
       const id = btn.dataset.delUser;
       const target = users.find(function(u){ return u.id===id; });
-      if(!confirm('متأكد إنك عايز تلغي صلاحية "'+(target?target.display_name:'')+'"؟ (الحساب هيتقفل من البرنامج، وتقدر تحذفه نهائيًا من Supabase لو حبيت)')) return;
-      const { error } = await sb.from('profiles').delete().eq('id', id);
+      if(!confirm('متأكد إنك عايز تلغي صلاحية "'+(target?target.display_name:'')+'"؟ (الحساب هيتحذف نهائيًا من البرنامج)')) return;
+      const { error } = await sb.rpc('app_admin_delete_user', { p_token: getSavedToken(), p_target_id: id });
       if(error){ toast('تعذر إلغاء الصلاحية: '+error.message, 'error'); return; }
       toast('تم إلغاء صلاحية المستخدم '+(target?target.display_name:''));
       renderUsersModal();
@@ -1986,14 +2025,37 @@ async function renderUsersModal(editingId){
   });
   const cancelBtn = document.getElementById('btnCancelEditUser');
   if(cancelBtn) cancelBtn.addEventListener('click', function(){ renderUsersModal(); });
+  const btnResetUserPassword = document.getElementById('btnResetUserPassword');
+  if(btnResetUserPassword){
+    btnResetUserPassword.addEventListener('click', async function(){
+      const newPassword = document.getElementById('userResetPassword').value;
+      if(!newPassword || newPassword.length < 6){ toast('كلمة المرور لازم تكون 6 حروف/أرقام على الأقل','error'); return; }
+      if(!confirm('متأكد إنك عايز تغيّر كلمة مرور "'+editing.display_name+'"؟')) return;
+      btnResetUserPassword.disabled = true; btnResetUserPassword.textContent = 'جارٍ التنفيذ...';
+      try{
+        const { error } = await sb.rpc('app_admin_reset_password', { p_token: getSavedToken(), p_target_id: editing.id, p_new_password: newPassword });
+        if(error){ toast('تعذر تغيير كلمة المرور: '+error.message, 'error'); return; }
+        toast('تم تغيير كلمة مرور المستخدم بنجاح');
+        document.getElementById('userResetPassword').value = '';
+      }catch(e){
+        toast('تعذر الاتصال بخدمة تغيير كلمة المرور: '+e.message, 'error');
+      }finally{
+        btnResetUserPassword.disabled = false; btnResetUserPassword.textContent = 'تعيين كلمة المرور';
+      }
+    });
+  }
   document.getElementById('btnSaveUser').addEventListener('click', async function(){
     const role = document.getElementById('userRole').value;
     if(editing){
       const displayName = document.getElementById('userDisplayName').value.trim();
       if(!displayName){ toast('برجاء إدخال الاسم','error'); return; }
-      const { error } = await sb.from('profiles').update({ display_name:displayName, role:role }).eq('id', editing.id);
+      const { error } = await sb.rpc('app_admin_update_user', { p_token: getSavedToken(), p_target_id: editing.id, p_display_name: displayName, p_role: role });
       if(error){ toast('تعذر الحفظ: '+error.message, 'error'); return; }
-      if(editing.id===cu.id) CURRENT_PROFILE = await fetchMyProfile();
+      if(editing.id===cu.id){
+        CURRENT_PROFILE.display_name = displayName;
+        CURRENT_PROFILE.role = role;
+        refreshCurrentUserLabel();
+      }
       toast('تم تحديث بيانات المستخدم');
       renderUsersModal();
       return;
@@ -2003,13 +2065,7 @@ async function renderUsersModal(editingId){
     const password = document.getElementById('userPassword').value;
     if(!displayName || !username){ toast('برجاء إدخال الاسم واسم المستخدم','error'); return; }
     if(!password || password.length < 6){ toast('كلمة المرور لازم تكون 6 حروف/أرقام على الأقل','error'); return; }
-    /* بنستخدم اتصال منفصل ومؤقت مخصوص لإنشاء الحساب الجديد، عشان ميبدلش جلسة دخولك انت الحالية */
-    const tempClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth:{ persistSession:false, autoRefreshToken:false } });
-    const { error } = await tempClient.auth.signUp({
-      email: usernameToEmail(username),
-      password: password,
-      options: { data:{ displayName:displayName, username:username, role:role } }
-    });
+    const { error } = await sb.rpc('app_admin_create_user', { p_token: getSavedToken(), p_username: username, p_password: password, p_display_name: displayName, p_role: role });
     if(error){ toast('تعذر إنشاء المستخدم: '+error.message, 'error'); return; }
     toast('تمت إضافة المستخدم');
     renderUsersModal();
@@ -2628,10 +2684,17 @@ function init(){
   if(btnLogout && !btnLogout.dataset.bound){
     btnLogout.dataset.bound = '1';
     btnLogout.addEventListener('click', async function(){
-      if(sb) await sb.auth.signOut();
+      const token = getSavedToken();
+      if(sb && token){ try{ await sb.rpc('app_logout', { p_token: token }); }catch(e){} }
+      saveToken(null);
       CURRENT_PROFILE = null;
       showLogin();
     });
+  }
+  const btnChangeMyPassword = document.getElementById('btnChangeMyPassword');
+  if(btnChangeMyPassword && !btnChangeMyPassword.dataset.bound){
+    btnChangeMyPassword.dataset.bound = '1';
+    btnChangeMyPassword.addEventListener('click', openChangeMyPasswordModal);
   }
   const btnManageUsers = document.getElementById('btnManageUsers');
   if(btnManageUsers && !btnManageUsers.dataset.bound){
