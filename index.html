@@ -1,0 +1,2848 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نظام الموارد البشرية</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+
+:root{
+  --brand:#0E4F49; --brand-dark:#0A3B36; --brand-light:#E1EFEC;
+  --accent:#A8631B; --accent-light:#F3E6D3;
+  --bg:#F5F4EF; --surface:#FFFFFF; --surface-2:#FBFAF7;
+  --ink:#20241F; --ink-soft:#5C6259; --ink-faint:#8D9187;
+  --border:#E2DFD3;
+  --danger:#B3261E; --danger-light:#FBEAE8;
+  --success:#2E7D32; --success-light:#E9F5EA;
+  --warning:#8A5A00; --warning-light:#FBF1DC;
+  --radius:10px;
+  --shadow:0 1px 2px rgba(32,36,31,.06), 0 6px 16px rgba(32,36,31,.06);
+  --font-ar:'Tajawal',sans-serif;
+  --font-mono:'IBM Plex Mono',monospace;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:var(--font-ar);
+  background:var(--bg);
+  color:var(--ink);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+.mono{font-family:var(--font-mono);direction:ltr;unicode-bidi:embed;}
+::selection{background:var(--brand-light);}
+
+/* ---- login ---- */
+.login-screen{
+  position:fixed;inset:0;z-index:1000;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(160deg,var(--brand) 0%,var(--brand-dark) 100%);
+  padding:20px;
+}
+.login-card{
+  width:100%;max-width:380px;background:var(--surface);
+  border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.35);
+  padding:36px 32px;
+}
+.login-logo{
+  width:56px;height:56px;border-radius:14px;background:var(--accent);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:18px;color:#fff;margin:0 auto 14px;
+}
+.login-card h2{text-align:center;margin:0 0 4px;font-size:20px;color:var(--ink);}
+.login-card p.sub{text-align:center;margin:0 0 24px;color:var(--ink-soft);font-size:13px;}
+.login-field{margin-bottom:14px;}
+.login-field label{display:block;font-size:13px;color:var(--ink-soft);margin-bottom:6px;}
+.login-field input{
+  width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:8px;
+  font-size:14px;background:var(--surface-2);color:var(--ink);
+}
+.login-field input:focus{outline:none;border-color:var(--brand);}
+.login-error{
+  background:var(--danger-light);color:var(--danger);border-radius:8px;
+  padding:8px 12px;font-size:13px;margin-bottom:14px;display:none;
+}
+.login-error.show{display:block;}
+.login-btn{
+  width:100%;padding:12px;border:none;border-radius:8px;background:var(--brand);
+  color:#fff;font-weight:700;font-size:14px;margin-top:4px;
+}
+.login-btn:hover{background:var(--brand-dark);}
+.login-remember{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-soft);margin-bottom:16px;}
+.login-remember input{width:auto;}
+.btn-logout{background:transparent;border:1px solid rgba(255,255,255,.4);color:#fff;}
+.btn-logout:hover{background:rgba(255,255,255,.12);}
+.pw-field{position:relative;}
+.pw-field input{padding-inline-end:40px!important;}
+.pw-toggle{
+  position:absolute;top:50%;transform:translateY(-50%);
+  inset-inline-end:6px;background:none;border:none;cursor:pointer;
+  font-size:15px;color:var(--ink-soft);padding:6px 8px;line-height:1;
+}
+.pw-toggle:hover{color:var(--ink);}
+.setup-note{
+  background:var(--brand-light);color:var(--brand-dark);border-radius:8px;
+  padding:10px 12px;font-size:12.5px;margin-bottom:18px;line-height:1.7;
+}
+
+/* ---- topbar ---- */
+.topbar{
+  display:flex;align-items:center;gap:24px;
+  background:var(--brand);color:#fff;
+  padding:14px 28px;position:sticky;top:0;z-index:40;
+  box-shadow:var(--shadow);
+}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand-mark{
+  width:36px;height:36px;border-radius:9px;background:var(--accent);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:14px;letter-spacing:.5px;color:#fff;
+  font-family:var(--font-mono);
+}
+.brand h1{font-size:17px;font-weight:700;margin:0;white-space:nowrap;}
+.brand .sub{font-size:11px;color:#CFE3E0;margin-top:1px;}
+.modules{display:flex;gap:4px;flex:1;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;}
+.modules::-webkit-scrollbar{display:none;height:0;}
+.mod-btn{
+  background:transparent;border:none;color:#CFE3E0;
+  padding:9px 16px;border-radius:8px;font-size:14px;font-weight:500;
+  transition:.15s;white-space:nowrap;
+}
+.mod-btn:hover{background:rgba(255,255,255,.08);color:#fff;}
+.mod-btn.active{background:#fff;color:var(--brand-dark);font-weight:700;}
+.top-actions{display:flex;gap:8px;align-items:center;}
+.btn{
+  border:1px solid var(--border);background:var(--surface);color:var(--ink);
+  padding:9px 14px;border-radius:8px;font-size:13px;font-weight:500;
+  display:inline-flex;align-items:center;gap:6px;transition:.15s;
+}
+.btn:hover{border-color:var(--ink-faint);}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.btn.primary:hover{background:#8F5417;}
+.btn.ghost{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.25);color:#fff;}
+.btn.ghost:hover{background:rgba(255,255,255,.18);}
+.btn.danger{border-color:var(--danger);color:var(--danger);background:var(--danger-light);}
+.btn.sm{padding:6px 10px;font-size:12px;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+
+/* ---- company tabs ---- */
+.company-bar{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  padding:14px 28px;background:var(--surface-2);border-bottom:1px solid var(--border);
+}
+.company-chip{
+  display:flex;align-items:center;gap:8px;padding:7px 14px;border-radius:20px;
+  border:1px solid var(--border);background:var(--surface);font-size:13px;font-weight:500;
+  color:var(--ink-soft);transition:.15s;
+}
+.company-chip:hover{border-color:var(--ink-faint);}
+.company-chip.active{color:#fff;border-color:transparent;}
+.company-chip .dot{width:8px;height:8px;border-radius:50%;flex:none;}
+.company-chip .count{
+  background:rgba(0,0,0,.08);border-radius:10px;padding:1px 7px;font-size:11px;
+  font-family:var(--font-mono);
+}
+.company-chip.active .count{background:rgba(255,255,255,.25);}
+.add-company{border-style:dashed;color:var(--ink-faint);}
+
+/* ---- layout ---- */
+main{padding:24px 28px 60px;max-width:1280px;margin:0 auto;}
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:12px;flex-wrap:wrap;}
+.section-head h2{font-size:19px;margin:0;font-weight:700;}
+.section-head p{margin:2px 0 0;color:var(--ink-soft);font-size:13px;}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px;}
+.search-box{
+  display:flex;align-items:center;gap:8px;background:var(--surface);
+  border:1px solid var(--border);border-radius:8px;padding:8px 12px;min-width:220px;
+}
+.search-box input{border:none;outline:none;background:transparent;font-size:13px;width:100%;color:var(--ink);}
+.filter-chip{
+  border:1px solid var(--border);background:var(--surface);border-radius:8px;
+  padding:8px 12px;font-size:13px;color:var(--ink-soft);
+}
+.filter-chip.active{background:var(--brand-light);border-color:var(--brand);color:var(--brand-dark);font-weight:600;}
+
+/* ---- cards / kpis ---- */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:20px;}
+.kpi-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px 18px;box-shadow:var(--shadow);
+}
+.kpi-card .label{font-size:12px;color:var(--ink-soft);margin-bottom:6px;}
+.kpi-card .value{font-size:26px;font-weight:800;font-family:var(--font-mono);direction:ltr;display:inline-block;}
+.kpi-card .value.small{font-size:20px;}
+.kpi-card .delta{font-size:11px;color:var(--ink-faint);margin-top:4px;}
+
+.panel{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:18px 20px;margin-bottom:18px;box-shadow:var(--shadow);
+}
+.panel h3{font-size:15px;margin:0 0 12px;font-weight:700;}
+
+.forms-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;}
+.form-card{margin-bottom:0;}
+.form-card h3{margin-bottom:6px;}
+.form-card p.muted{font-size:12.5px;color:var(--ink-soft);margin:0 0 14px;min-height:34px;}
+
+.stack-bar{height:14px;border-radius:7px;overflow:hidden;display:flex;background:var(--border);}
+.stack-bar > div{height:100%;}
+.legend{display:flex;gap:16px;margin-top:10px;flex-wrap:wrap;}
+.legend .item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-soft);}
+.legend .sw{width:10px;height:10px;border-radius:3px;flex:none;}
+
+/* ---- company breakdown rows ---- */
+.co-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}
+.co-row:last-child{border-bottom:none;}
+.co-row .dot{width:9px;height:9px;border-radius:50%;flex:none;}
+.co-row .name{flex:1;font-size:13px;font-weight:600;}
+.co-row .mini-bar{width:120px;height:8px;background:var(--border);border-radius:4px;overflow:hidden;display:flex;}
+.co-row .mini-bar>div{height:100%;}
+.co-row .n{font-family:var(--font-mono);font-size:12px;color:var(--ink-soft);width:70px;text-align:left;direction:ltr;}
+
+/* ---- alerts ---- */
+.alert-list{display:flex;flex-direction:column;gap:8px;}
+.alert-row{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;
+  background:var(--surface-2);border:1px solid var(--border);cursor:pointer;transition:.15s;
+}
+.alert-row:hover{border-color:var(--ink-faint);}
+.alert-row .badge-dot{width:8px;height:8px;border-radius:50%;flex:none;}
+.alert-row .txt{flex:1;font-size:13px;}
+.alert-row .txt b{font-weight:700;}
+.alert-row .tag{font-size:11px;color:var(--ink-faint);}
+.empty-note{color:var(--ink-faint);font-size:13px;padding:10px 0;}
+
+/* ---- table ---- */
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead th{
+  text-align:right;padding:11px 14px;background:var(--surface-2);color:var(--ink-soft);
+  font-weight:600;font-size:12px;border-bottom:1px solid var(--border);white-space:nowrap;
+}
+tbody td{padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr{transition:.1s;}
+tbody tr.clickable:hover{background:var(--surface-2);cursor:pointer;}
+td.num,th.num{font-family:var(--font-mono);direction:ltr;text-align:left;}
+.name-cell{display:flex;align-items:center;gap:9px;}
+.avatar{
+  width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;color:#fff;flex:none;
+}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+.badge.ok{background:var(--success-light);color:var(--success);}
+.badge.no{background:var(--danger-light);color:var(--danger);}
+.badge.warn{background:var(--warning-light);color:var(--warning);}
+.badge.muted{background:var(--border);color:var(--ink-soft);}
+.row-actions{display:flex;gap:6px;justify-content:flex-end;}
+.icon-btn{
+  width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:var(--surface);
+  display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--ink-soft);
+}
+.icon-btn:hover{border-color:var(--ink-faint);color:var(--ink);}
+
+/* ---- employee card grid ---- */
+.emp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;}
+.emp-card{
+  position:relative;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px 12px 14px;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;
+  text-align:center;transition:.15s;
+}
+.emp-card:hover{border-color:var(--ink-faint);cursor:pointer;transform:translateY(-1px);}
+.emp-card .photo-wrap{
+  width:68px;height:68px;border-radius:14px;overflow:hidden;background:var(--brand-light);
+  display:flex;align-items:center;justify-content:center;margin-bottom:10px;flex:none;
+}
+.emp-card .photo-wrap img{width:100%;height:100%;object-fit:cover;display:block;}
+.emp-card .photo-wrap .ph-initials{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff;}
+.emp-card .nm{font-size:13px;font-weight:700;line-height:1.35;margin-bottom:3px;word-break:break-word;}
+.emp-card .jt{font-size:11px;color:var(--ink-soft);margin-bottom:9px;min-height:14px;}
+.emp-card .badges{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;}
+.emp-card .del-x{
+  position:absolute;top:8px;left:8px;width:22px;height:22px;border-radius:50%;border:none;
+  background:var(--surface-2);color:var(--ink-faint);font-size:12px;display:flex;align-items:center;
+  justify-content:center;opacity:0;transition:.15s;
+}
+.emp-card:hover .del-x{opacity:1;}
+.emp-card .del-x:hover{background:var(--danger-light);color:var(--danger);}
+
+/* ---- photo upload (modal) ---- */
+.photo-upload{display:flex;align-items:center;gap:14px;margin-bottom:16px;}
+.photo-upload .photo-wrap{
+  width:76px;height:76px;border-radius:14px;overflow:hidden;background:var(--brand-light);
+  display:flex;align-items:center;justify-content:center;flex:none;
+}
+.photo-upload .photo-wrap img{width:100%;height:100%;object-fit:cover;display:block;}
+.photo-upload .photo-wrap .ph-initials{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff;}
+.photo-upload .actions{display:flex;gap:8px;}
+
+/* ---- modal ---- */
+.overlay{
+  position:fixed;inset:0;background:rgba(20,22,19,.5);display:flex;align-items:center;justify-content:center;
+  z-index:100;padding:20px;
+}
+.modal{
+  background:var(--surface);border-radius:14px;width:100%;max-width:640px;max-height:88vh;
+  display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25);
+}
+.modal.wide{max-width:760px;}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);}
+.modal-head h3{margin:0;font-size:16px;font-weight:700;}
+.modal-close{background:none;border:none;font-size:18px;color:var(--ink-faint);padding:4px 8px;}
+.modal-tabs{display:flex;gap:2px;padding:0 20px;border-bottom:1px solid var(--border);overflow-x:auto;}
+.modal-tab{padding:11px 14px;font-size:13px;color:var(--ink-soft);border-bottom:2px solid transparent;white-space:nowrap;background:none;border-top:none;border-right:none;border-left:none;}
+.modal-tab.active{color:var(--brand-dark);border-bottom-color:var(--accent);font-weight:700;}
+.modal-body{padding:18px 20px;overflow-y:auto;}
+.modal-foot{display:flex;justify-content:space-between;gap:10px;padding:14px 20px;border-top:1px solid var(--border);}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px;}
+.form-grid.one{grid-template-columns:1fr;}
+.field{display:flex;flex-direction:column;gap:5px;}
+.field.span2{grid-column:1/-1;}
+.field label{font-size:12px;color:var(--ink-soft);font-weight:600;}
+.field input,.field select,.field textarea{
+  border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:13px;
+  background:var(--surface);color:var(--ink);outline:none;
+}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--brand);}
+.field .hint{font-size:11px;color:var(--ink-faint);}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);}
+.toggle-row:last-child{border-bottom:none;}
+.switch{position:relative;width:38px;height:22px;flex:none;}
+.switch input{opacity:0;width:100%;height:100%;position:absolute;margin:0;cursor:pointer;z-index:1;}
+.switch .track{position:absolute;inset:0;background:var(--border);border-radius:11px;transition:.15s;}
+.switch .thumb{position:absolute;top:2px;right:2px;width:18px;height:18px;background:#fff;border-radius:50%;transition:.15s;box-shadow:0 1px 3px rgba(0,0,0,.3);}
+.switch input:checked+.track{background:var(--success);}
+.switch input:checked+.track+.thumb{transform:translateX(-16px);}
+
+.doc-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+.doc-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);}
+.doc-row .fi{width:30px;height:30px;border-radius:7px;background:var(--brand-light);color:var(--brand-dark);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex:none;}
+.doc-row .meta{flex:1;min-width:0;}
+.doc-row .meta .n{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.doc-row .meta .d{font-size:11px;color:var(--ink-faint);}
+.upload-drop{
+  border:1.5px dashed var(--border);border-radius:10px;padding:18px;text-align:center;
+  color:var(--ink-soft);font-size:13px;cursor:pointer;transition:.15s;
+}
+.upload-drop:hover{border-color:var(--accent);color:var(--accent);}
+
+.leave-log{display:flex;flex-direction:column;gap:6px;max-height:160px;overflow-y:auto;margin-top:10px;}
+.leave-log .row{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-soft);padding:6px 0;border-bottom:1px solid var(--border);}
+.leave-adjust{display:flex;gap:8px;align-items:center;margin-top:10px;}
+.leave-adjust input{width:80px;}
+
+/* ---- toast ---- */
+#toastHost{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:200;display:flex;flex-direction:column;gap:8px;align-items:center;}
+.toast{
+  background:var(--ink);color:#fff;padding:11px 18px;border-radius:8px;font-size:13px;
+  box-shadow:0 8px 24px rgba(0,0,0,.25);animation:toastIn .2s ease-out;
+}
+@keyframes toastIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+/* ---- print ---- */
+.print-only{display:none;}
+@media print{
+  .topbar,.company-bar,.toolbar,.section-head .btn,#toastHost,.no-print{display:none!important;}
+  main{padding:0;max-width:none;}
+  body{background:#fff;}
+  .print-only{display:block;}
+}
+
+@media (max-width:820px){
+  .topbar{flex-wrap:wrap;padding:12px 16px;}
+  .modules{order:3;width:100%;}
+  main{padding:16px;}
+  .form-grid{grid-template-columns:1fr;}
+}
+
+</style>
+</head>
+<body>
+
+<div class="login-screen" id="syncScreen">
+  <div class="login-card" style="text-align:center;">
+    <div class="login-logo" style="margin:0 auto 14px;">HR</div>
+    <h2>جاري تحميل البيانات...</h2>
+    <p class="sub">بيتم الاتصال بقاعدة البيانات المشتركة</p>
+  </div>
+</div>
+
+<div class="login-screen" id="setupScreen" style="display:none;">
+  <div class="login-card">
+    <div class="login-logo">HR</div>
+    <h2>إعداد الحساب الأول</h2>
+    <p class="sub">أنشئ اسم المستخدم وكلمة المرور الخاصة بك</p>
+    <div class="setup-note">لا يوجد حسابات بعد — أول حساب تنشئه هيكون بصلاحية "مدير" ويقدر يضيف باقي المستخدمين لاحقًا من داخل البرنامج.</div>
+    <div class="login-error" id="setupError">من فضلك تأكد من البيانات المدخلة</div>
+    <form id="setupForm" autocomplete="off">
+      <div class="login-field">
+        <label for="setupUsername">اسم المستخدم</label>
+        <input type="text" id="setupUsername" autocomplete="username" required>
+      </div>
+      <div class="login-field pw-field">
+        <label for="setupPassword">كلمة المرور</label>
+        <input type="password" id="setupPassword" autocomplete="new-password" required>
+        <button type="button" class="pw-toggle" data-toggle-for="setupPassword">👁</button>
+      </div>
+      <div class="login-field pw-field">
+        <label for="setupPasswordConfirm">تأكيد كلمة المرور</label>
+        <input type="password" id="setupPasswordConfirm" autocomplete="new-password" required>
+        <button type="button" class="pw-toggle" data-toggle-for="setupPasswordConfirm">👁</button>
+      </div>
+      <button type="submit" class="login-btn">إنشاء الحساب والدخول</button>
+    </form>
+  </div>
+</div>
+
+<div class="login-screen" id="loginScreen" style="display:none;">
+  <div class="login-card">
+    <div class="login-logo">HR</div>
+    <h2>نظام الموارد البشرية</h2>
+    <p class="sub">يرجى تسجيل الدخول للمتابعة</p>
+    <div class="login-error" id="loginError">اسم المستخدم أو كلمة المرور غير صحيحة</div>
+    <form id="loginForm" autocomplete="off">
+      <div class="login-field">
+        <label for="loginUser">اسم المستخدم</label>
+        <input type="text" id="loginUser" autocomplete="username" required>
+      </div>
+      <div class="login-field pw-field">
+        <label for="loginPass">كلمة المرور</label>
+        <input type="password" id="loginPass" autocomplete="current-password" required>
+        <button type="button" class="pw-toggle" data-toggle-for="loginPass">👁</button>
+      </div>
+      <label class="login-remember">
+        <input type="checkbox" id="loginRemember">
+        تذكرني على هذا الجهاز
+      </label>
+      <button type="submit" class="login-btn">دخول</button>
+    </form>
+  </div>
+</div>
+
+<div id="appRoot" style="display:none;">
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark">HR</div>
+    <div>
+      <h1>نظام الموارد البشرية</h1>
+    </div>
+  </div>
+  <nav class="modules" id="moduleNav">
+    <button class="mod-btn" data-module="dashboard">لوحة التحكم</button>
+    <button class="mod-btn" data-module="employees">سجل الموظفين</button>
+    <button class="mod-btn" data-module="insurance">التأمينات والعقود</button>
+    <button class="mod-btn" data-module="leave">الإجازات والمستندات</button>
+    <button class="mod-btn" data-module="reports">التقارير</button>
+    <button class="mod-btn" data-module="forms">النماذج</button>
+  </nav>
+  <div class="top-actions">
+    <button class="btn ghost" id="btnImportExcel">استيراد Excel</button>
+    <button class="btn ghost" id="btnExportExcel">تصدير Excel</button>
+    <button class="btn primary" id="btnAddEmployee">+ إضافة موظف</button>
+    <span id="currentUserLabel" style="color:#fff;font-size:13px;opacity:.9;margin-inline:6px;"></span>
+    <button class="btn btn-logout" id="btnChangeMyPassword">تغيير كلمة المرور</button>
+    <button class="btn btn-logout" id="btnManageUsers">إدارة المستخدمين</button>
+    <button class="btn btn-logout" id="btnStateBackups">النسخ الاحتياطية</button>
+    <button class="btn btn-logout" id="btnLogout">خروج</button>
+  </div>
+</header>
+
+<div class="company-bar no-print" id="companyBar"></div>
+
+<main id="app"></main>
+</div>
+
+<input type="file" id="fileImport" accept=".xlsx,.xls" style="display:none">
+<input type="file" id="fileDocUpload" accept=".pdf,.png,.jpg,.jpeg" style="display:none">
+<input type="file" id="fileCustomFormUpload" accept=".doc,.docx,.pdf" style="display:none">
+
+<div id="modalHost"></div>
+<div id="toastHost"></div>
+
+<script>
+/* ===================== بيانات أولية (من ملف Excel المرفوع) ===================== */
+const SEED_DATA_RAW = {"Biotech Pharma":[{"sr":1,"name":"محمد السيد محمد متولى","jobTitle":"","nationalId":"28101261200658","insuranceNumber":"58641546","hireDate":"2005-01-08","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":2,"name":"اسماء مختار على مصطفى","jobTitle":"","nationalId":"28610130102385","insuranceNumber":"12849462","hireDate":"2009-08-01","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":3,"name":"اسلام ربيع عبد المنعم محمود","jobTitle":"","nationalId":"28909292300135","insuranceNumber":"69266359","hireDate":"2014-08-01","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":4,"name":"سليمان رضوان سليمان أحمد","jobTitle":"","nationalId":"29105102100676","insuranceNumber":"71320501","hireDate":"2014-12-01","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":5,"name":"محمد البسمى عبد المجيد عبدالله","jobTitle":"","nationalId":"26503050103234","insuranceNumber":"45564947","hireDate":"2015-07-06","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":6,"name":"ايهاب محمد أحمد يونس","jobTitle":"","nationalId":"28112090102352","insuranceNumber":"60138218","hireDate":"2016-01-09","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":7,"name":"محمد أبراهيم احمد حسين","jobTitle":"","nationalId":"28003102800171","insuranceNumber":"55873333","hireDate":"2016-01-12","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":8,"name":"محمد عصام  محمد شعبان","jobTitle":"","nationalId":"28905102101039","insuranceNumber":"25725101","hireDate":"2017-06-01","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما  مصر الجديدة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":9,"name":"ابراهيم احمد عبدالحميد (اسكندرية.)","jobTitle":"","nationalId":"28909170200652","insuranceNumber":"61877135","hireDate":"2018-04-22","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":10,"name":"حسنى توفيق عبده","jobTitle":"","nationalId":"28409230101338","insuranceNumber":"56427011","hireDate":"2018-04-29","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":11,"name":"خالد احمد فتحى محمد","jobTitle":"","nationalId":"28406162103298","insuranceNumber":"59128441","hireDate":"2018-05-07","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":12,"name":"مفرح عبدالله عيد سليمان","jobTitle":"","nationalId":"27305162301095","insuranceNumber":"67472561","hireDate":"2019-02-01","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":13,"name":"عادل عدلى ابراهيم","jobTitle":"","nationalId":"27406152700499","insuranceNumber":"56715915","hireDate":"2019-08-22","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما  مصر الجديدة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":14,"name":"سعد مجدى سعد ابراهيم","jobTitle":"","nationalId":"29304221400397","insuranceNumber":"7174801","hireDate":"2020-02-23","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما  مصر الجديدة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":15,"name":"أحمد محمد عبد الرسول فرج","jobTitle":"","nationalId":"28006270104499","insuranceNumber":"19895074","hireDate":"2020-02-24","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما  مصر الجديدة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":16,"name":"محمد إبراهيم محمد عامر","jobTitle":"","nationalId":"29205231402217","insuranceNumber":"79700876","hireDate":"2020-03-07","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما  مصر الجديدة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":17,"name":"باسم أحمد محمد","jobTitle":"","nationalId":"29004292601136","insuranceNumber":"62234666","hireDate":"2020-03-10","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما  مصر الجديدة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":18,"name":"نهى جمال احمد","jobTitle":"","nationalId":"28711112100325","insuranceNumber":"18456248","hireDate":"2021-05-01","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":19,"name":"دينا عبدالله أحمد","jobTitle":"","nationalId":"29407232100381","insuranceNumber":"77102615","hireDate":"2021-08-01","terminationDate":null,"insuranceStatusRaw":"غير مؤمن (مؤمن عليها فى جهه اخرى)","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":21,"name":"محمد حسين فكار (تعبئة)","jobTitle":"","nationalId":"28607121803019","insuranceNumber":"77297232","hireDate":"2021-11-01","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما  مصر الجديدة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":22,"name":"محمود ايمن الجارحى امين","jobTitle":"","nationalId":"29810132200034","insuranceNumber":"80022202","hireDate":"2021-11-01","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":23,"name":"ايمن خميس عبدالعليم (تعبئة)","jobTitle":"","nationalId":"28906252103532","insuranceNumber":"36992853","hireDate":"2021-11-13","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما  مصر الجديدة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":24,"name":"عبدالكريم سلامه عبدالكريم","jobTitle":"","nationalId":"29307262101093","insuranceNumber":"69722534","hireDate":"2022-01-09","terminationDate":null,"insuranceStatusRaw":"غير مؤمن (مؤمن عليه فى وزارة الصحة)","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":25,"name":"احمد موسى احمد ابراهيم","jobTitle":"","nationalId":"30006202700678","insuranceNumber":"82018531","hireDate":"2022-07-17","terminationDate":null,"insuranceStatusRaw":"غير مؤمن (تكاليف)","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":26,"name":"حسام سعد محمد موسى","jobTitle":"","nationalId":"29711152100895","insuranceNumber":"67928369","hireDate":"2022-07-17","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":27,"name":"عمرو عاصم أحمد عبداللطيف","jobTitle":"","nationalId":"28408182601831","insuranceNumber":"60239179","hireDate":"2023-05-01","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":28,"name":"خليل عبدالرحمن سيد خليل موسى","jobTitle":"","nationalId":"28706251403258","insuranceNumber":"16125041","hireDate":"2023-08-01","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما  مصر الجديدة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":29,"name":"أحمد مصطفى محمد مصطفى سرور","jobTitle":"","nationalId":"29504151403171","insuranceNumber":"66468523","hireDate":"2023-12-01","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما مصر الجديدة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":30,"name":"فاطمة الزهراء محمد سيد امين","jobTitle":"","nationalId":"29706212103445","insuranceNumber":"85930947","hireDate":"2024-02-01","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":31,"name":"أحمد حمدى محمد السيد","jobTitle":"","nationalId":"29409230100297","insuranceNumber":"75797725","hireDate":"2024-04-01","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":32,"name":"محمود محمد السيد عبدالفتاح","jobTitle":"","nationalId":"29706281400079","insuranceNumber":"78410753","hireDate":"2024-04-15","terminationDate":null,"insuranceStatusRaw":"غير مؤمن (مؤمن عليه بجهه عمل اخرى)","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":33,"name":"أحمد عبدالرحمن محمد محمد","jobTitle":"","nationalId":"29110218800059","insuranceNumber":"68356918","hireDate":"2024-06-01","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":34,"name":"عبدالفتاح محمد أسماعيل أحمد","jobTitle":"","nationalId":"29905251200159","insuranceNumber":"86158697","hireDate":"2025-02-25","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":35,"name":"محمد مصطفى عبدالحميد طاحون","jobTitle":"","nationalId":"29803011707631","insuranceNumber":"79324875","hireDate":"2025-08-01","terminationDate":null,"insuranceStatusRaw":"غير مؤمن (مؤمن عليه بجهه عمل اخرى)","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":36,"name":"محمد سلامه فهمى","jobTitle":"","nationalId":"30304290103332","insuranceNumber":"87261776","hireDate":"2026-03-15","terminationDate":null,"insuranceStatusRaw":"غير مؤمن","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":37,"name":"محمد محمود رضوان","jobTitle":"","nationalId":"29612112102293","insuranceNumber":"65033579","hireDate":"2026-03-24","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":38,"name":"عبدالله مفرح عبدالله عيد","jobTitle":"","nationalId":"30505202302938","insuranceNumber":"86719370","hireDate":null,"terminationDate":null,"insuranceStatusRaw":"غير مؤمن","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":39,"name":"هشام محمد راتب عبدالله","jobTitle":"","nationalId":"29810122301096","insuranceNumber":"88453161","hireDate":null,"terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true}],"Pharma Pal":[{"sr":1,"name":"الشيماء زكريا  محمد","jobTitle":"","nationalId":"28011260100821","insuranceNumber":"59253972","hireDate":"2014-01-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":2,"name":"ايمن احمد عبدالله","jobTitle":"","nationalId":"27912010205671","insuranceNumber":"53012822","hireDate":"2014-01-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":3,"name":"محمد سيد محمود الريس","jobTitle":"","nationalId":"27112200101078","insuranceNumber":"31051830","hireDate":"2015-01-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":4,"name":"عبد السيد حسن احمد","jobTitle":"","nationalId":"26612212800493","insuranceNumber":"46094986","hireDate":"2009-02-01","terminationDate":null,"insuranceStatusRaw":"مؤمن عليه مستلزمات هدى الشهاوى","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":5,"name":"محمد يسرى أحمد مسعود","jobTitle":"","nationalId":"28811190104234","insuranceNumber":"22971593","hireDate":"2014-04-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":6,"name":"محمد يوسف محمد","jobTitle":"","nationalId":"28501281501555","insuranceNumber":"60074980","hireDate":"2014-04-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":7,"name":"احمد رضا احمد","jobTitle":"","nationalId":"28705022701559","insuranceNumber":"15054942","hireDate":"2015-02-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":8,"name":"حسام الدين على محمود","jobTitle":"","nationalId":"28810018800371","insuranceNumber":"68487791","hireDate":"2015-12-01","terminationDate":null,"insuranceStatusRaw":"غير مؤمن (مؤمن عليه فى جهه عمل اخرى)","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":9,"name":"احمد محمود مطر","jobTitle":"","nationalId":"29103210105274","insuranceNumber":"70657750","hireDate":"2016-01-03","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":10,"name":"محمد عزت محمد احمد","jobTitle":"","nationalId":"29309270200699","insuranceNumber":"48143192","hireDate":"2016-12-06","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":11,"name":"اسماء محمود سامى محمد","jobTitle":"","nationalId":"29302181900267","insuranceNumber":"47256116","hireDate":"2017-05-21","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":12,"name":"ايه عبدالنبى جمعه احمد","jobTitle":"","nationalId":"29403170400182","insuranceNumber":"76098594","hireDate":"2018-01-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":13,"name":"حسين محمد حسين حسين","jobTitle":"","nationalId":"29308120101378","insuranceNumber":"79742808","hireDate":"2019-08-18","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":14,"name":"اميرة محمد محمد اسماعيل","jobTitle":"","nationalId":"28911162800823","insuranceNumber":"44987426","hireDate":"2019-08-20","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":15,"name":"هند عصام على الجمال","jobTitle":"","nationalId":"29601241200461","insuranceNumber":"53299878","hireDate":"2020-01-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":16,"name":"سهيله صابر عبدالغنى","jobTitle":"","nationalId":"29508022601701","insuranceNumber":"76551647","hireDate":"2020-01-10","terminationDate":null,"insuranceStatusRaw":"غير مؤمن","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":17,"name":"رانيا عادل واصف","jobTitle":"","nationalId":"29703030101944","insuranceNumber":"82043873","hireDate":"2021-01-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":18,"name":"رحمه ايمن قاسم","jobTitle":"","nationalId":"29806072103207","insuranceNumber":"80541559","hireDate":"2021-06-20","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":19,"name":"اسماء عبدالرحمن حسن","jobTitle":"","nationalId":"29807222103126","insuranceNumber":"79125798","hireDate":"2021-06-20","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":20,"name":"امل عصام الدين موسى","jobTitle":"","nationalId":"29804212600106","insuranceNumber":"81312436","hireDate":"2021-10-06","terminationDate":null,"insuranceStatusRaw":"غير مؤمن (تكليف)","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":21,"name":"محمد احمد على أحمد صالح","jobTitle":"","nationalId":"28911181404092","insuranceNumber":"32024389","hireDate":"2021-12-05","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":22,"name":"ساره محى الدين عبدالغنى","jobTitle":"","nationalId":"29512100200384","insuranceNumber":"80208592","hireDate":"2021-12-26","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":23,"name":"دنيا مدحت محمد نور","jobTitle":"","nationalId":"29706198800847","insuranceNumber":"43164225","hireDate":"2022-08-01","terminationDate":null,"insuranceStatusRaw":"غير مؤمن (تكليف)","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":24,"name":"أسماء محمود عبدالعزيز محمد","jobTitle":"","nationalId":"29902050201786","insuranceNumber":"83102395","hireDate":"2023-01-22","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":25,"name":"احمد محمد عبدالرازق امين","jobTitle":"","nationalId":"29903181600275","insuranceNumber":"74794895","hireDate":"2024-01-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":26,"name":"شروق عبدالله عبدالعاطى على","jobTitle":"","nationalId":"29511151204761","insuranceNumber":"66495488","hireDate":"2024-01-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":27,"name":"إسراء على إبراهيم السيد","jobTitle":"","nationalId":"29910011336286","insuranceNumber":"84142153","hireDate":"2024-08-20","terminationDate":null,"insuranceStatusRaw":"غير مؤمن(part time(","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":28,"name":"هاجر عمرو محمد محمود الريس","jobTitle":"","nationalId":"29912240100361","insuranceNumber":"84463952","hireDate":"2024-12-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":29,"name":"بدرالدين جمال احمد بسيونى","jobTitle":"","nationalId":"30004011805795","insuranceNumber":"86794681","hireDate":"2025-03-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":30,"name":"سارة فارس عبدالحميد محمد","jobTitle":"","nationalId":"29307251403144","insuranceNumber":"71783719","hireDate":"2025-03-02","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":31,"name":"سارة حسن عمر محمود","jobTitle":"","nationalId":"29510010112246","insuranceNumber":"79088105","hireDate":"2025-06-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":32,"name":"نورهان محمد عصام احمد","jobTitle":"","nationalId":"28905152103407","insuranceNumber":"30104676","hireDate":"2025-06-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":33,"name":"مريم منصور اسماعيل اسماعيل","jobTitle":"","nationalId":"30204201101327","insuranceNumber":"86033084","hireDate":"2025-06-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":34,"name":"مصطفى محمد صفالله عبدالخالق","jobTitle":"","nationalId":"29808110102999","insuranceNumber":"65686953","hireDate":"2025-06-16","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":35,"name":"روان عماد عبدالوهاب ياقوت","jobTitle":"","nationalId":"29801010208566","insuranceNumber":"79936463","hireDate":"2025-07-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":36,"name":"كريم محمود عبدالرازق سليمان","jobTitle":"","nationalId":"30112070103653","insuranceNumber":"88021988","hireDate":"2025-08-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":37,"name":"مارينا نتعى فوزى عبدالملاك","jobTitle":"","nationalId":"30212200103744","insuranceNumber":"87412214","hireDate":"2025-08-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":38,"name":"بيتر رزق عياد فوزى","jobTitle":"","nationalId":"30001292201835","insuranceNumber":"84596285","hireDate":"2025-08-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":39,"name":"جيرالدين جورج ميلاد","jobTitle":"","nationalId":"30201101402207","insuranceNumber":"","hireDate":"2025-08-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":40,"name":"سارة السيد محمدفتحى رجب","jobTitle":"","nationalId":"29407060202984","insuranceNumber":"48488588","hireDate":"2025-09-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":41,"name":"جهاد محمد جمال محمد محمود","jobTitle":"","nationalId":"29707141300968","insuranceNumber":"78245553","hireDate":"2025-09-14","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":42,"name":"فيولا نبيل فهيم بهنا","jobTitle":"","nationalId":"29705132701221","insuranceNumber":"78214611","hireDate":"2025-09-15","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":43,"name":"نرمين فادى مكين اسطفانوس","jobTitle":"","nationalId":"28911302501341","insuranceNumber":"34482761","hireDate":"2025-09-28","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":44,"name":"ندى ايمن جاب الله فريد","jobTitle":"","nationalId":"30209012719087","insuranceNumber":"87714565","hireDate":"2025-09-28","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":45,"name":"مريم احمد محمود عاطف محمد","jobTitle":"","nationalId":"29805082101681","insuranceNumber":"81461340","hireDate":"2025-09-28","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":46,"name":"محمد احمد محمد عبدالعزيز على المسلمى","jobTitle":"","nationalId":"29404201300072","insuranceNumber":"","hireDate":"2025-11-01","terminationDate":null,"insuranceStatusRaw":"غير مؤمن (تكليف)","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":47,"name":"مريم اشرف سمير شفيق","jobTitle":"","nationalId":"30312202401143","insuranceNumber":"87303917","hireDate":"2025-11-04","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":48,"name":"مايكل نبيل جوده جرجس","jobTitle":"","nationalId":"29701212502372","insuranceNumber":"81543218","hireDate":"2025-11-30","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":49,"name":"ماريا سامى سليم جوهر","jobTitle":"","nationalId":"30211040104106","insuranceNumber":"87719169","hireDate":"2025-12-10","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":50,"name":"اسماء احمد عبدالفتاح ذكى","jobTitle":"","nationalId":"30207161400724","insuranceNumber":"90465698","hireDate":"2026-01-04","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":51,"name":"منار احمد نبيه محمد عزت","jobTitle":"","nationalId":"30104010106022","insuranceNumber":"62875441","hireDate":"2026-01-04","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":52,"name":"عبد المجيد عبدالله عبدالمجيد","jobTitle":"","nationalId":"30211122105216","insuranceNumber":"","hireDate":"2026-05-04","terminationDate":null,"insuranceStatusRaw":"غير مؤمن","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":53,"name":"حبيبة محمد شحاتة محمد صقر","jobTitle":"","nationalId":"29909091609689","insuranceNumber":"80838455","hireDate":"2026-07-05","terminationDate":null,"insuranceStatusRaw":"غير مؤمن","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":54,"name":"غاده ايمن يس عبدالفتاح","jobTitle":"","nationalId":"30310150105947","insuranceNumber":"","hireDate":"2026-07-05","terminationDate":null,"insuranceStatusRaw":"غير مؤمن","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":55,"name":"محمود سامى محمود زيدان","jobTitle":"","nationalId":"29701170201172","insuranceNumber":"","hireDate":"2026-07-05","terminationDate":null,"insuranceStatusRaw":"غير مؤمن","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":56,"name":"ديما ابراهيم فتحى عبدالله","jobTitle":"","nationalId":"30204021700087","insuranceNumber":"","hireDate":"2026-07-05","terminationDate":null,"insuranceStatusRaw":"غير مؤمن","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":57,"name":"حسام جابر سيد","jobTitle":"","nationalId":"29807272401632","insuranceNumber":"","hireDate":"2026-07-05","terminationDate":null,"insuranceStatusRaw":"غير مؤمن","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false}]};
+
+const COMPANY_COLORS = ['#0E4F49','#8B4B9C','#B3661E','#1D6FA5','#6B7C1D','#A5303F','#3C6E71','#9C4221'];
+const DB_VERSION = 7;
+const STORAGE_KEY = 'hris_data_v1';
+
+/* ===================== إعدادات Supabase (قاعدة البيانات المشتركة) =====================
+   1) أنشئ مشروع مجاني على supabase.com
+   2) نفّذ كود SQL الموجود في ملف supabase-setup.sql (المرفق) داخل SQL Editor بمشروعك
+   3) من Project Settings > API انسخ القيمتين تحت وحطهم مكان القيم الحالية
+*/
+const SUPABASE_URL = 'https://nzvlwvkypkhmqhnfdcrh.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im56dmx3dmt5cGtobXFobmZkY3JoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3NTY5MTYsImV4cCI6MjEwMTMzMjkxNn0.Ra5os6bqEhLPV1zmGqLMGQKFAa43OF8JavHtmThlwZk';
+const SUPABASE_READY = SUPABASE_URL.indexOf('YOUR_SUPABASE') === -1 && SUPABASE_ANON_KEY.indexOf('YOUR_SUPABASE') === -1;
+const DOCS_BUCKET = 'employee-documents';
+const sb = SUPABASE_READY ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+/* مفتاح تخزين توكن الجلسة محليًا في المتصفح (بديل جلسة Supabase Auth) */
+const SESSION_TOKEN_KEY = 'hr_app_session_token';
+/* بصمة فريدة لكل تبويب/جهاز مفتوح، بنستخدمها عشان نتجاهل صدى تعديلاتنا احنا الراجع من Realtime
+   ولا نمسح فوق تعديل أحدث كنا عملناه محليًا (سبب اختفاء البيانات بعد الحفظ) */
+const CLIENT_ID = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('client_'+Math.random().toString(36).slice(2)+Date.now());
+
+/* قراءة/كتابة صف واحد بمعرّف id من جدول hr_store (المشترك بين كل المستخدمين) */
+async function sbFetchRow(id){
+  if(!sb) return undefined; // undefined = مفيش اتصال بقاعدة البيانات، استخدم النسخة المحلية
+  try{
+    const { data, error } = await sb.from('hr_store').select('data').eq('id', id).maybeSingle();
+    if(error) throw error;
+    return data ? data.data : null; // null = متصل لكن الصف لسه فاضي
+  }catch(e){
+    console.warn('تعذر الاتصال بـ Supabase، هيتم الاعتماد على النسخة المحلية مؤقتًا', e);
+    return undefined;
+  }
+}
+let PENDING_SYNC_COUNT = 0;
+async function sbPushRow(id, value){
+  if(!sb) return;
+  PENDING_SYNC_COUNT++;
+  try{
+    const { error } = await sb.from('hr_store').upsert({ id:id, data:value, origin:CLIENT_ID, updated_at:new Date().toISOString() });
+    if(error) throw error;
+  }catch(e){
+    console.warn('تعذر رفع آخر تعديل إلى Supabase', e);
+    toast('⚠️ تعذر حفظ آخر تعديل على الخادم المشترك: '+(e && e.message ? e.message : 'خطأ غير معروف')+' — لا تقفل الصفحة وحاول تاني', 'error');
+  }finally{
+    PENDING_SYNC_COUNT--;
+  }
+}
+window.addEventListener('beforeunload', function(ev){
+  if(PENDING_SYNC_COUNT > 0){
+    ev.preventDefault();
+    ev.returnValue = 'لسه فيه تعديل بيتحفظ على الخادم، متقفلش الصفحة دلوقتي.';
+    return ev.returnValue;
+  }
+});
+/* الاستماع للتغييرات اللي بيعملها مستخدمون تانيين وتحديث الشاشة أوتوماتيك */
+function sbSubscribe(){
+  if(!sb) return;
+  sb.channel('hr_store_live')
+    .on('postgres_changes', { event:'*', schema:'public', table:'hr_store' }, function(payload){
+      const row = payload.new;
+      if(!row) return;
+      if(row.origin === CLIENT_ID) return; /* ده صدى تعديل احنا اللي عملناه، تجاهله عشان ميمسحش تعديل أحدث */
+      if(row.id === 'state'){
+        STATE = row.data;
+        try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE)); }catch(e){}
+        renderCompanyBar(); renderModule();
+        toast('تم تحديث البيانات بواسطة مستخدم آخر');
+      }
+    })
+    .subscribe();
+}
+
+/* ===================== نظام دخول مستقل تمامًا (مش مبني على Supabase Auth) =====================
+   الباسورد بيتخزّن مشفّر (bcrypt عن طريق pgcrypto) جوه قاعدة البيانات، والتحقق منه
+   وإدارة الجلسات بيتم بالكامل جوه دوال Postgres (RPC، انظر ملف schema.sql). المتصفح
+   بيعرف بس "توكن جلسة" عشوائي (زي كوكيز الجلسة العادية)، مش بيعرف ولا يقدر يتحكم في
+   أي صلاحيات — كل قرار (هل ده مدير؟ هل التوكن لسه سليم؟) بيتاخد جوه قاعدة البيانات. */
+
+function getSavedToken(){
+  try{ return localStorage.getItem(SESSION_TOKEN_KEY); }catch(e){ return null; }
+}
+function saveToken(token){
+  try{
+    if(token) localStorage.setItem(SESSION_TOKEN_KEY, token);
+    else localStorage.removeItem(SESSION_TOKEN_KEY);
+  }catch(e){}
+}
+
+let CURRENT_PROFILE = null; /* {id, username, display_name, role} بتاع المستخدم المسجل دخوله حاليًا */
+
+async function restoreSessionFromToken(){
+  const token = getSavedToken();
+  if(!sb || !token) return null;
+  const { data, error } = await sb.rpc('app_session_user', { p_token: token });
+  if(error || !data || !data.length){ saveToken(null); return null; }
+  const row = data[0];
+  return { id: row.user_id, username: row.username, display_name: row.display_name, role: row.role };
+}
+
+function getCurrentUser(){
+  return CURRENT_PROFILE;
+}
+
+function refreshCurrentUserLabel(){
+  const cu = getCurrentUser();
+  const lbl = document.getElementById('currentUserLabel');
+  if(lbl) lbl.textContent = cu ? ('مرحبًا، '+(cu.display_name||cu.username)) : '';
+}
+
+function showApp(){
+  document.getElementById('setupScreen').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appRoot').style.display = '';
+  init();
+  const cu = getCurrentUser();
+  refreshCurrentUserLabel();
+  const btnMU = document.getElementById('btnManageUsers');
+  if(btnMU) btnMU.style.display = (cu && cu.role==='admin') ? '' : 'none';
+  const btnSB = document.getElementById('btnStateBackups');
+  if(btnSB) btnSB.style.display = (cu && cu.role==='admin') ? '' : 'none';
+}
+
+function showLogin(){
+  document.getElementById('appRoot').style.display = 'none';
+  document.getElementById('setupScreen').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+  document.getElementById('loginError').classList.remove('show');
+  setTimeout(function(){ document.getElementById('loginUser').focus(); }, 50);
+}
+
+function showSetup(){
+  document.getElementById('appRoot').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('setupScreen').style.display = 'flex';
+  setTimeout(function(){ document.getElementById('setupUsername').focus(); }, 50);
+}
+
+function attachPasswordToggle(btn){
+  const input = document.getElementById(btn.dataset.toggleFor);
+  if(!input) return;
+  btn.addEventListener('click', function(){
+    const showing = input.type === 'text';
+    input.type = showing ? 'password' : 'text';
+    btn.textContent = showing ? '👁' : '🙈';
+  });
+}
+
+async function syncStateFromSupabase(options){
+  const opts = options || {};
+  const remoteState = await sbFetchRow('state');
+  if(remoteState !== undefined && remoteState !== null){
+    STATE = remoteState;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE));
+  } else if(remoteState === null && opts.allowInitialPush){
+    /* الحالة الوحيدة المسموح فيها نبدأ صف بيانات جديد على السيرفر: أول إعداد للحساب فعلاً */
+    sbPushRow('state', STATE);
+  } else if(remoteState === null){
+    /* السيرفر رجّع "مفيش بيانات" لمستخدم مسجّل دخول بالفعل — ده وضع غير متوقع (ممكن يكون
+       بسبب مشكلة صلاحيات مؤقتة)، فمنعملش أي حفظ تلقائي هنا عشان محدش يمسح بيانات موجودة
+       فعلاً على السيرفر بالغلط. بنسيب الشاشة تفتح بالنسخة المحلية المخزنة في الجهاز ده (لو
+       موجودة) وننبّه المستخدم بدل ما نمسح أي حاجة.  */
+    toast('⚠️ تعذر تأكيد وجود بيانات على الخادم المشترك حاليًا — البيانات المعروضة قد تكون قديمة، لا تعتمد على أي تعديل جديد قبل ما تتأكد من الاتصال', 'error');
+  }
+  sbSubscribe();
+}
+
+async function setupAuth(){
+  document.querySelectorAll('.pw-toggle').forEach(attachPasswordToggle);
+
+  if(!sb){
+    /* مفيش اتصال بـ Supabase — منقدرش نتحقق من هوية حقيقية، نمنع الدخول بدل ما نفتح البرنامج من غير حماية */
+    document.getElementById('syncScreen').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('loginError').textContent = 'لا يوجد اتصال بخادم الدخول حاليًا، تحقق من الإنترنت وأعد تحميل الصفحة';
+    document.getElementById('loginError').classList.add('show');
+    return;
+  }
+
+  document.getElementById('setupForm').addEventListener('submit', async function(ev){
+    ev.preventDefault();
+    const username = document.getElementById('setupUsername').value.trim();
+    const pass = document.getElementById('setupPassword').value;
+    const pass2 = document.getElementById('setupPasswordConfirm').value;
+    const err = document.getElementById('setupError');
+    if(!username || !pass){
+      err.textContent = 'من فضلك املأ كل الحقول';
+      err.classList.add('show');
+      return;
+    }
+    if(pass.length < 6){
+      err.textContent = 'كلمة المرور لازم تكون 6 حروف/أرقام على الأقل';
+      err.classList.add('show');
+      return;
+    }
+    if(pass !== pass2){
+      err.textContent = 'كلمة المرور وتأكيدها غير متطابقين';
+      err.classList.add('show');
+      return;
+    }
+    err.classList.remove('show');
+    const { data, error } = await sb.rpc('app_setup_first_admin', { p_username: username, p_password: pass, p_display_name: username });
+    if(error || !data || !data.length){
+      err.textContent = 'تعذر إنشاء الحساب: '+(error?error.message:'خطأ غير معروف');
+      err.classList.add('show');
+      return;
+    }
+    const row = data[0];
+    saveToken(row.token);
+    CURRENT_PROFILE = { id: row.user_id, username: username, display_name: row.display_name, role: row.role };
+    await syncStateFromSupabase({ allowInitialPush: true });
+    showApp();
+  });
+
+  document.getElementById('loginForm').addEventListener('submit', async function(ev){
+    ev.preventDefault();
+    const user = document.getElementById('loginUser').value.trim();
+    const pass = document.getElementById('loginPass').value;
+    const errBox = document.getElementById('loginError');
+    errBox.classList.remove('show');
+    const { data, error } = await sb.rpc('app_login', { p_username: user, p_password: pass });
+    if(error || !data || !data.length){
+      errBox.textContent = 'اسم المستخدم أو كلمة المرور غير صحيحة';
+      errBox.classList.add('show');
+      return;
+    }
+    const row = data[0];
+    saveToken(row.token);
+    CURRENT_PROFILE = { id: row.user_id, username: user, display_name: row.display_name, role: row.role };
+    await syncStateFromSupabase();
+    showApp();
+  });
+
+  /* هل فيه جلسة محفوظة في المتصفح من قبل؟ */
+  const restored = await restoreSessionFromToken();
+  if(restored){
+    CURRENT_PROFILE = restored;
+    await syncStateFromSupabase();
+    document.getElementById('syncScreen').style.display = 'none';
+    showApp();
+    return;
+  }
+  document.getElementById('syncScreen').style.display = 'none';
+  /* هل فيه مدير مفعّل بالفعل على البرنامج؟ */
+  const { data: hasUser } = await sb.rpc('app_has_any_user');
+  if(!hasUser){
+    showSetup();
+  } else {
+    showLogin();
+  }
+}
+
+/* ===================== أدوات عامة ===================== */
+function uid(prefix){ return prefix+'_'+Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); }
+
+function escapeHtml(s){
+  if(s===null||s===undefined) return '';
+  return String(s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+function fmtDate(d){
+  if(!d) return '<span class="empty-note">—</span>';
+  try{
+    const dt = new Date(d);
+    if(isNaN(dt.getTime())) return escapeHtml(d);
+    return dt.toLocaleDateString('ar-EG',{year:'numeric',month:'2-digit',day:'2-digit'});
+  }catch(e){ return escapeHtml(d); }
+}
+function dateSpanText(startStr, endStr){
+  if(!startStr) return '';
+  const start = new Date(startStr);
+  if(isNaN(start.getTime())) return '';
+  const end = endStr ? new Date(endStr) : new Date();
+  if(isNaN(end.getTime()) || end < start) return '';
+  let years = end.getFullYear() - start.getFullYear();
+  let months = end.getMonth() - start.getMonth();
+  let days = end.getDate() - start.getDate();
+  if(days < 0) months--;
+  if(months < 0){ years--; months += 12; }
+  if(years < 0) return '';
+  const parts = [];
+  if(years > 0) parts.push(years + (years===1?' سنة':' سنوات'));
+  if(months > 0) parts.push(months + (months===1?' شهر':' أشهر'));
+  if(parts.length === 0) return 'أقل من شهر';
+  return parts.join(' و');
+}
+function calcContributionPeriod(e){
+  if(!e || !e.insured || !e.insuranceDate) return '';
+  return dateSpanText(e.insuranceDate, e.terminationDate);
+}
+function calcServiceDuration(e){
+  if(!e || !e.hireDate) return '';
+  return dateSpanText(e.hireDate, e.terminationDate);
+}
+function calcAge(birthDateStr){
+  if(!birthDateStr) return null;
+  const b = new Date(birthDateStr);
+  if(isNaN(b.getTime())) return null;
+  const now = new Date();
+  let years = now.getFullYear() - b.getFullYear();
+  const m = now.getMonth() - b.getMonth();
+  if(m < 0 || (m===0 && now.getDate() < b.getDate())) years--;
+  return years;
+}
+function yearsMonthsToRetirement(birthDateStr){
+  if(!birthDateStr) return null;
+  const b = new Date(birthDateStr);
+  if(isNaN(b.getTime())) return null;
+  const retireDate = new Date(b);
+  retireDate.setFullYear(b.getFullYear() + RETIREMENT_AGE);
+  const now = new Date();
+  if(retireDate <= now) return {years:0, months:0, past:true};
+  let years = retireDate.getFullYear() - now.getFullYear();
+  let months = retireDate.getMonth() - now.getMonth();
+  if(retireDate.getDate() < now.getDate()) months--;
+  if(months < 0){ years--; months += 12; }
+  return {years:years, months:months, past:false};
+}
+function terminationReasonOptions(cur){
+  const opts = ['','استقالة','إنهاء خدمة','تقاعد (معاش)','انتهاء عقد','فصل','أخرى'];
+  return opts.map(function(o){ return '<option value="'+o+'"'+(cur===o?' selected':'')+'>'+(o||'— غير محدد —')+'</option>'; }).join('');
+}
+function probationEndDate(e){
+  if(!e || !e.hireDate || !e.probationMonths) return null;
+  const d = new Date(e.hireDate);
+  if(isNaN(d.getTime())) return null;
+  d.setMonth(d.getMonth() + Number(e.probationMonths));
+  return d.toISOString().slice(0,10);
+}
+function probationInfo(e){
+  if(!e || empStatus(e)!=='active') return null;
+  const end = probationEndDate(e);
+  if(!end) return null;
+  const days = daysUntil(end);
+  if(days===null || days < 0) return null;
+  return {endDate:end, days:days};
+}
+function daysUntil(dateStr){
+  if(!dateStr) return null;
+  const d = new Date(dateStr);
+  if(isNaN(d.getTime())) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const target = new Date(d); target.setHours(0,0,0,0);
+  return Math.round((target-today)/86400000);
+}
+function contractAlertInfo(e){
+  if(!e || !e.contractEndDate || empStatus(e)==='terminated') return null;
+  const days = daysUntil(e.contractEndDate);
+  if(days===null) return null;
+  if(days < 0) return {expired:true, days:days};
+  if(days <= 90) return {expired:false, days:days};
+  return null;
+}
+function contractStatusBadge(e){
+  if(!e.contractEndDate) return '';
+  const ci = contractAlertInfo(e);
+  if(ci && ci.expired) return '<span class="badge no">العقد منتهي منذ '+Math.abs(ci.days)+' يوم</span>';
+  if(ci) return '<span class="badge warn">باقي '+ci.days+' يوم على انتهاء العقد</span>';
+  return '<span class="badge ok">العقد ساري</span>';
+}
+function fmtSize(n){
+  if(!n) return '';
+  if(n<1024) return n+' B';
+  if(n<1024*1024) return Math.round(n/1024)+' KB';
+  return (n/1024/1024).toFixed(1)+' MB';
+}
+function toast(msg, kind){
+  const host = document.getElementById('toastHost');
+  const t = document.createElement('div');
+  t.className = 'toast';
+  if(kind==='error') t.style.background = 'var(--danger)';
+  t.textContent = msg;
+  host.appendChild(t);
+  setTimeout(function(){ t.remove(); }, 3200);
+}
+
+/* ===================== طبقة البيانات + الترحيل (Migrations) ===================== */
+function buildSeedState(){
+  const companies = [];
+  const employees = [];
+  let ci = 0;
+  Object.keys(SEED_DATA_RAW).forEach(function(companyName){
+    const cname = companyName.trim();
+    const companyId = uid('co');
+    companies.push({id:companyId, name:cname, color:COMPANY_COLORS[ci % COMPANY_COLORS.length], establishmentInsuranceNumber:'', insuranceOfficeName:''});
+    ci++;
+    SEED_DATA_RAW[companyName].forEach(function(r){
+      employees.push({
+        id: uid('emp'),
+        company: companyId,
+        sr: r.sr || null,
+        name: r.name || '',
+        jobTitle: r.jobTitle || '',
+        department: r.department || '',
+        division: r.division || '',
+        directManager: r.directManager || '',
+        nationalId: r.nationalId || '',
+        phone: r.phone || '',
+        address: r.address || '',
+        insuranceNumber: r.insuranceNumber || '',
+        hireDate: r.hireDate || null,
+        terminationDate: r.terminationDate || null,
+        insuranceDate: r.insuranceDate || null,
+        insured: r.insured === null ? true : !!r.insured,
+        insuranceEntity: r.insuranceStatusRaw || '',
+        officeBranch: r.officeBranch || '',
+        contractType: r.contractType || '',
+        contractEndDate: r.contractEndDate || null,
+        contributionPeriod: r.contributionPeriod || '',
+        leaveBalance: (r.leaveBalance===null||r.leaveBalance===undefined||r.leaveBalance==='') ? null : Number(r.leaveBalance),
+        leaveLog: [],
+        documents: [],
+        notes: [r.note1, r.note2, r.documentsNote].filter(Boolean).join(' / '),
+        salary: null, salaryLog: [], historyLog: [], probationMonths: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+    });
+  });
+  return {version: DB_VERSION, companies: companies, employees: employees, customForms: {}};
+}
+
+function runMigrations(data){
+  if(!data.version) data.version = 1;
+  if(data.version < 2){
+    (data.employees||[]).forEach(function(e){
+      if(e.department===undefined) e.department = '';
+      if(e.division===undefined) e.division = '';
+      if(e.directManager===undefined) e.directManager = '';
+      if(e.phone===undefined) e.phone = '';
+      if(e.address===undefined) e.address = '';
+      if(e.insuranceDate===undefined) e.insuranceDate = null;
+    });
+    data.version = 2;
+  }
+  if(data.version < 3){
+    (data.employees||[]).forEach(function(e){
+      if(e.contractEndDate===undefined) e.contractEndDate = null;
+    });
+    data.version = 3;
+  }
+  if(data.version < 4){
+    (data.employees||[]).forEach(function(e){
+      if(e.birthDate===undefined) e.birthDate = '';
+      if(e.terminationReason===undefined) e.terminationReason = '';
+    });
+    (data.companies||[]).forEach(function(c){
+      if(c.establishmentInsuranceNumber===undefined) c.establishmentInsuranceNumber = '';
+      if(c.insuranceOfficeName===undefined) c.insuranceOfficeName = '';
+    });
+    data.version = 4;
+  }
+  if(data.version < 5){
+    (data.employees||[]).forEach(function(e){
+      if(e.salary===undefined) e.salary = null;
+      if(e.salaryLog===undefined) e.salaryLog = [];
+      if(e.historyLog===undefined) e.historyLog = [];
+      if(e.probationMonths===undefined) e.probationMonths = null;
+    });
+    data.version = 5;
+  }
+  if(data.version < 6){
+    if(!data.customForms) data.customForms = [];
+    data.version = 6;
+  }
+  if(data.version < 7){
+    if(!data.customForms || Array.isArray(data.customForms)) data.customForms = {};
+    data.version = 7;
+  }
+  /* مساحة لإضافة ترحيلات مستقبلية عند تغيير هيكل البيانات:
+     if(data.version < 4){ ... تحويل البيانات ... data.version = 4; } */
+  return data;
+}
+
+/* بيحفظ محليًا بس (زي مسودة على الجهاز)، من غير ما يلمس السيرفر المشترك خالص.
+   بيتستخدم وقت أول تحميل للصفحة قبل ما نتأكد أصلاً إن فيه دخول ومزامنة حقيقية. */
+function persistStateLocalOnly(state){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+  catch(e){ toast('تعذر حفظ البيانات محلياً — المساحة المحلية ممتلئة', 'error'); }
+}
+
+function persistState(state){
+  persistStateLocalOnly(state);
+  sbPushRow('state', state);
+}
+
+function loadState(){
+  let raw;
+  try{ raw = localStorage.getItem(STORAGE_KEY); }catch(e){ raw = null; }
+  if(!raw){
+    /* مفيش نسخة محلية على الجهاز ده — ده مش دليل إن قاعدة البيانات المشتركة فاضية،
+       ممكن يكون ده أول مرة يتفتح فيها البرنامج على الجهاز ده بالذات. عشان كده
+       بنبني نسخة محلية مؤقتة بس، ومنرفعهاش للسيرفر خالص هنا. المزامنة الحقيقية
+       مع السيرفر بتحصل بعد الدخول في syncStateFromSupabase. */
+    return buildSeedState();
+  }
+  let data;
+  try{ data = JSON.parse(raw); }
+  catch(e){ return buildSeedState(); }
+  const versionBefore = data.version;
+  data = runMigrations(data);
+  if(data.version !== versionBefore) persistStateLocalOnly(data);
+  return data;
+}
+
+let STATE = loadState();
+let UI = { module:'dashboard', activeCompany:'all', search:'', empFilter:'all', insFilter:'all', leaveTab:'balances', reportTab:'detailed', modalTab:'basic', editingId:null, newHiresDays:90, retirementWindowYears:3, formsEmployeeId:null };
+const RETIREMENT_AGE = 60;
+let newEmployeeDraft = null;
+let modalSnapshot = null;
+let pendingDocEmployee = null;
+let pendingCustomFormKey = null;
+
+/* ===================== منطق البيانات ===================== */
+function companies(){ return STATE.companies; }
+function companyById(id){ return STATE.companies.find(function(c){ return c.id===id; }); }
+function employeesOf(companyId){
+  return companyId==='all' ? STATE.employees : STATE.employees.filter(function(e){ return e.company===companyId; });
+}
+function empStatus(e){ return e.terminationDate ? 'terminated' : 'active'; }
+
+function emptyEmployee(){
+  return {
+    id:null,
+    company: (UI.activeCompany!=='all' ? UI.activeCompany : (companies()[0] ? companies()[0].id : null)),
+    sr:null, name:'', jobTitle:'', department:'', division:'', directManager:'', nationalId:'', insuranceNumber:'', phone:'', address:'',
+    birthDate:'', hireDate:'', terminationDate:'', terminationReason:'', insuranceDate:'',
+    insured:true, insuranceEntity:'', officeBranch:'', contractType:'', contractEndDate:'', contributionPeriod:'',
+    leaveBalance:null, leaveLog:[], documents:[], notes:'', photo:null,
+    salary:null, salaryLog:[], historyLog:[], probationMonths:3
+  };
+}
+
+function computeAlerts(){
+  const alerts = [];
+  STATE.employees.forEach(function(e){
+    if(empStatus(e)==='terminated') return;
+    if(e.insured && !e.insuranceNumber){ alerts.push({sev:'high', emp:e, tab:'insurance', msg:'مسجل كمؤمَّن لكن بدون رقم تأمين'}); }
+    if(!e.contractType){ alerts.push({sev:'low', emp:e, tab:'insurance', msg:'نوع العقد غير محدد'}); }
+    const ci = contractAlertInfo(e);
+    if(ci && ci.expired){ alerts.push({sev:'high', emp:e, tab:'insurance', msg:'انتهى تاريخ العقد منذ '+Math.abs(ci.days)+' يوم ولم يُجدَّد'}); }
+    else if(ci){ alerts.push({sev:'low', emp:e, tab:'insurance', msg:'العقد قريب من الانتهاء (باقي '+ci.days+' يوم)'}); }
+    if(!e.jobTitle){ alerts.push({sev:'low', emp:e, msg:'المسمى الوظيفي غير محدد'}); }
+    if(e.leaveBalance===null || e.leaveBalance===undefined){ alerts.push({sev:'low', emp:e, tab:'leave', msg:'رصيد الإجازة غير مسجل'}); }
+    else if(e.leaveBalance<0){ alerts.push({sev:'high', emp:e, tab:'leave', msg:'رصيد إجازة سالب ('+e.leaveBalance+' يوم)'}); }
+    if(e.documents.length===0){ alerts.push({sev:'low', emp:e, tab:'documents', msg:'لا توجد مستندات مرفقة'}); }
+    const pi = probationInfo(e);
+    if(pi){
+      if(pi.days<=7){ alerts.push({sev:'high', emp:e, tab:'career', msg:'فترة الاختبار قريبة الانتهاء (باقي '+pi.days+' يوم) — يلزم اتخاذ قرار'}); }
+      else if(pi.days<=21){ alerts.push({sev:'low', emp:e, tab:'career', msg:'فترة الاختبار تنتهي خلال '+pi.days+' يوم'}); }
+    }
+  });
+  alerts.sort(function(a,b){ return (a.sev==='high'?0:1) - (b.sev==='high'?0:1); });
+  return alerts;
+}
+function recentHires(days){
+  const now = Date.now();
+  return STATE.employees.filter(function(e){
+    if(!e.hireDate) return false;
+    const t = new Date(e.hireDate).getTime();
+    if(isNaN(t)) return false;
+    return (now - t)/86400000 <= days;
+  }).sort(function(a,b){ return new Date(b.hireDate) - new Date(a.hireDate); });
+}
+
+/* ===================== شريط الشركات ===================== */
+function renderCompanyBar(){
+  const host = document.getElementById('companyBar');
+  if(UI.module==='dashboard'){ host.style.display='none'; host.innerHTML=''; return; }
+  host.style.display='flex';
+  let html = chipHtml('all','كل الشركات', STATE.employees.length, UI.activeCompany==='all', '#5C6259');
+  companies().forEach(function(c){
+    html += chipHtml(c.id, c.name, employeesOf(c.id).length, UI.activeCompany===c.id, c.color);
+  });
+  html += '<button class="company-chip add-company" id="btnAddCompany">+ إضافة شركة</button>';
+  if(UI.activeCompany!=='all'){
+    html += '<button class="company-chip" id="btnEditCoInsurance" style="border-style:dashed">⚙ تأمينات المنشأة</button>';
+  }
+  host.innerHTML = html;
+  host.querySelectorAll('.company-chip[data-co]').forEach(function(el){
+    el.addEventListener('click', function(){
+      UI.activeCompany = el.dataset.co; UI.search=''; renderModule(); renderCompanyBar();
+    });
+  });
+  const addBtn = document.getElementById('btnAddCompany');
+  if(addBtn) addBtn.addEventListener('click', openAddCompanyModal);
+  const editCoBtn = document.getElementById('btnEditCoInsurance');
+  if(editCoBtn) editCoBtn.addEventListener('click', function(){ openEditCompanyModal(UI.activeCompany); });
+}
+function chipHtml(id,name,count,active,color){
+  const style = active ? ('background:'+color+';border-color:'+color+';') : '';
+  return '<button class="company-chip'+(active?' active':'')+'" data-co="'+id+'" style="'+style+'">'
+    + '<span class="dot" style="background:'+color+'"></span>'
+    + escapeHtml(name) + '<span class="count">'+count+'</span></button>';
+}
+
+/* ===================== توجيه العرض بين الوحدات ===================== */
+function renderModule(){
+  document.querySelectorAll('.mod-btn').forEach(function(b){ b.classList.toggle('active', b.dataset.module===UI.module); });
+  const app = document.getElementById('app');
+  if(UI.module==='dashboard') app.innerHTML = viewDashboard();
+  else if(UI.module==='employees') app.innerHTML = viewEmployees();
+  else if(UI.module==='insurance') app.innerHTML = viewInsurance();
+  else if(UI.module==='leave') app.innerHTML = viewLeave();
+  else if(UI.module==='reports') app.innerHTML = viewReports();
+  else if(UI.module==='forms') app.innerHTML = viewForms();
+  bindModuleEvents();
+}
+
+/* ===================== لوحة التحكم ===================== */
+function kpiCard(label,value,delta){
+  return '<div class="kpi-card"><div class="label">'+escapeHtml(label)+'</div><div class="value">'+value+'</div><div class="delta">'+escapeHtml(delta)+'</div></div>';
+}
+function viewDashboard(){
+  const total = STATE.employees.length;
+  const active = STATE.employees.filter(function(e){ return empStatus(e)==='active'; }).length;
+  const insured = STATE.employees.filter(function(e){ return e.insured; }).length;
+  const pct = total ? Math.round(insured/total*100) : 0;
+  const alerts = computeAlerts();
+  const hires = recentHires(90);
+
+  const kpis = kpiCard('إجمالي الموظفين', total, active+' نشط')
+    + kpiCard('عدد الشركات', companies().length, '')
+    + kpiCard('نسبة المؤمَّن عليهم', pct+'%', insured+' من '+total)
+    + kpiCard('تنبيهات نشطة', alerts.length, alerts.filter(function(a){return a.sev==='high';}).length+' عالية الأهمية');
+
+  const coRows = companies().map(function(c){
+    const emps = employeesOf(c.id);
+    const ins = emps.filter(function(e){ return e.insured; }).length;
+    const p = emps.length ? Math.round(ins/emps.length*100) : 0;
+    return '<div class="co-row">'
+      + '<span class="dot" style="background:'+c.color+'"></span>'
+      + '<span class="name">'+escapeHtml(c.name)+'</span>'
+      + '<div class="mini-bar"><div style="width:'+p+'%;background:'+c.color+'"></div></div>'
+      + '<span class="n">'+emps.length+' موظف</span>'
+      + '</div>';
+  }).join('');
+
+  const alertRows = alerts.length ? alerts.slice(0,8).map(function(a){
+    const color = a.sev==='high' ? 'var(--danger)' : 'var(--warning)';
+    const co = companyById(a.emp.company);
+    return '<div class="alert-row" data-emp="'+a.emp.id+'" data-tab="'+(a.tab||'basic')+'">'
+      + '<span class="badge-dot" style="background:'+color+'"></span>'
+      + '<span class="txt"><b>'+escapeHtml(a.emp.name)+'</b> — '+escapeHtml(a.msg)+'</span>'
+      + '<span class="tag">'+escapeHtml(co?co.name:'')+'</span>'
+      + '</div>';
+  }).join('') : '<div class="empty-note">لا توجد تنبيهات حالياً — البيانات مكتملة</div>';
+
+  const hiresRows = hires.length ? hires.slice(0,6).map(function(e){
+    const co = companyById(e.company);
+    return '<div class="co-row"><span class="dot" style="background:'+(co?co.color:'#999')+'"></span>'
+      + '<span class="name">'+escapeHtml(e.name)+'</span>'
+      + '<span class="n">'+fmtDate(e.hireDate)+'</span></div>';
+  }).join('') : '<div class="empty-note">لا يوجد تعيينات خلال آخر ٩٠ يوم</div>';
+
+  return ''
+    + '<div class="section-head"><div><h2>لوحة التحكم</h2><p>نظرة عامة على كل الشركات</p></div></div>'
+    + '<div class="kpi-grid">'+kpis+'</div>'
+    + '<div class="panel"><h3>نسبة التأمين حسب الشركة</h3>'+(coRows||'<div class="empty-note">لا توجد شركات بعد</div>')+'</div>'
+    + '<div class="panel"><h3>التنبيهات</h3><div class="alert-list">'+alertRows+'</div></div>'
+    + '<div class="panel"><h3>أحدث التعيينات (٩٠ يوم)</h3>'+hiresRows+'</div>';
+}
+
+/* ===================== سجل الموظفين ===================== */
+function statusFilterChips(){
+  const opts = [['all','الكل'],['active','نشط'],['terminated','منتهي']];
+  return opts.map(function(o){ return '<button class="filter-chip"'+' data-filt="'+o[0]+'"'+(UI.empFilter===o[0]?' class="filter-chip active"':'')+'>'+o[1]+'</button>'; }).join('');
+}
+function filteredEmployees(){
+  let list = employeesOf(UI.activeCompany);
+  if(UI.empFilter==='active') list = list.filter(function(e){ return empStatus(e)==='active'; });
+  if(UI.empFilter==='terminated') list = list.filter(function(e){ return empStatus(e)==='terminated'; });
+  if(UI.search.trim()){
+    const q = UI.search.trim().toLowerCase();
+    list = list.filter(function(e){
+      return (e.name||'').toLowerCase().indexOf(q)>-1 || (e.nationalId||'').indexOf(q)>-1 || (e.insuranceNumber||'').indexOf(q)>-1;
+    });
+  }
+  return list.slice().sort(function(a,b){ return (a.name||'').localeCompare(b.name||'','ar'); });
+}
+function employeeCardHtml(e){
+  const co = companyById(e.company);
+  const status = empStatus(e);
+  const initials = (e.name||'؟').trim().split(/\s+/).slice(0,2).map(function(w){ return w[0]; }).join('');
+  const photoHtml = e.photo
+    ? '<img src="'+e.photo+'" alt="">'
+    : '<span class="ph-initials" style="background:'+(co?co.color:'#999')+'">'+escapeHtml(initials)+'</span>';
+  return '<div class="emp-card clickable" data-emp="'+e.id+'">'
+    + '<button class="del-x" data-del="'+e.id+'" title="حذف">✕</button>'
+    + '<div class="photo-wrap">'+photoHtml+'</div>'
+    + '<div class="nm">'+escapeHtml(e.name)+'</div>'
+    + '<div class="jt">'+(e.jobTitle ? escapeHtml(e.jobTitle) : '—')+'</div>'
+    + '<div class="badges">'
+    + (status==='active' ? '<span class="badge ok">نشط</span>' : '<span class="badge muted">منتهي</span>')
+    + (e.insured ? '<span class="badge ok">مؤمَّن</span>' : '<span class="badge no">غير مؤمَّن</span>')
+    + '</div></div>';
+}
+function employeeRowHtml(e){
+  const co = companyById(e.company);
+  const status = empStatus(e);
+  const initials = (e.name||'؟').trim().split(/\s+/).slice(0,2).map(function(w){ return w[0]; }).join('');
+  return '<tr class="clickable" data-emp="'+e.id+'">'
+    + '<td><div class="name-cell"><span class="avatar" style="background:'+(co?co.color:'#999')+'">'+escapeHtml(initials)+'</span>'+escapeHtml(e.name)+'</div></td>'
+    + '<td>'+(e.jobTitle? escapeHtml(e.jobTitle) : '<span class="empty-note">—</span>')+'</td>'
+    + '<td class="num mono">'+escapeHtml(e.nationalId||'—')+'</td>'
+    + '<td>'+fmtDate(e.hireDate)+'</td>'
+    + '<td>'+(status==='active' ? '<span class="badge ok">نشط</span>' : '<span class="badge muted">منتهي</span>')+'</td>'
+    + '<td>'+(e.insured ? '<span class="badge ok">مؤمَّن</span>' : '<span class="badge no">غير مؤمَّن</span>')+'</td>'
+    + '<td class="row-actions"><button class="icon-btn" data-del="'+e.id+'" title="حذف">✕</button></td>'
+    + '</tr>';
+}
+function viewEmployees(){
+  const list = filteredEmployees();
+  const cards = list.map(employeeCardHtml).join('') || '<div class="empty-note">لا يوجد موظفون مطابقون</div>';
+  const printBtn = UI.activeCompany!=='all' ? '<button class="btn" id="btnPrintCompany">طباعة تقرير الشركة</button>' : '';
+
+  const scope = employeesOf(UI.activeCompany);
+  const scopeTotal = scope.length;
+  const scopeActive = scope.filter(function(e){ return empStatus(e)==='active'; }).length;
+  const scopeInsured = scope.filter(function(e){ return e.insured; }).length;
+  const scopePct = scopeTotal ? Math.round(scopeInsured/scopeTotal*100) : 0;
+  const scopeIncomplete = scope.filter(function(e){ return (e.insured && !e.insuranceNumber) || !e.contractType; }).length;
+  const kpis = kpiCard('إجمالي الموظفين', scopeTotal, scopeActive+' نشط')
+    + kpiCard('عدد الشركات', UI.activeCompany==='all' ? companies().length : 1, '')
+    + kpiCard('نسبة المؤمَّن عليهم', scopePct+'%', scopeInsured+' من '+scopeTotal)
+    + kpiCard('بيانات ناقصة', scopeIncomplete, scopeIncomplete>0 ? 'تحتاج مراجعة' : 'مكتملة');
+
+  return ''
+    + '<div class="section-head"><div><h2>سجل الموظفين</h2><p>'+list.length+' موظف'+(UI.activeCompany!=='all' ? ' في '+escapeHtml(companyById(UI.activeCompany) ? companyById(UI.activeCompany).name : '') : '')+'</p></div>'
+    + '<div style="display:flex;gap:8px">'+printBtn+'<button class="btn primary" id="btnAddEmployeeInline">+ إضافة موظف</button></div></div>'
+    + '<div class="kpi-grid">'+kpis+'</div>'
+    + '<div class="toolbar">'
+    + '<div class="search-box"><input id="empSearch" placeholder="ابحث بالاسم أو الرقم القومي..." value="'+escapeHtml(UI.search)+'"></div>'
+    + statusFilterChipsFixed()
+    + '</div>'
+    + '<div class="emp-grid">'+cards+'</div>';
+}
+function statusFilterChipsFixed(){
+  const opts = [['all','الكل'],['active','نشط'],['terminated','منتهي']];
+  return opts.map(function(o){
+    return '<button class="filter-chip emp-filt'+(UI.empFilter===o[0]?' active':'')+'" data-filt="'+o[0]+'">'+o[1]+'</button>';
+  }).join('');
+}
+
+/* ===================== التأمينات والعقود ===================== */
+function viewInsurance(){
+  let list = employeesOf(UI.activeCompany).filter(function(e){ return empStatus(e)==='active'; });
+  if(UI.insFilter==='insured') list = list.filter(function(e){ return e.insured; });
+  if(UI.insFilter==='uninsured') list = list.filter(function(e){ return !e.insured; });
+  if(UI.insFilter==='incomplete') list = list.filter(function(e){ return (e.insured && !e.insuranceNumber) || !e.contractType; });
+  if(UI.insFilter==='expiring') list = list.filter(function(e){ return !!contractAlertInfo(e); });
+  list = list.slice().sort(function(a,b){ return (a.name||'').localeCompare(b.name||'','ar'); });
+
+  const rows = list.map(function(e){
+    const co = companyById(e.company);
+    const badge = contractStatusBadge(e);
+    return '<tr class="clickable" data-emp="'+e.id+'" data-tab="insurance">'
+      + '<td><div class="name-cell"><span class="dot" style="background:'+co.color+';width:8px;height:8px;border-radius:50%"></span>'+escapeHtml(e.name)+'</div></td>'
+      + '<td>'+escapeHtml(co.name)+'</td>'
+      + '<td>'+(e.insured ? '<span class="badge ok">مؤمَّن</span>' : '<span class="badge no">غير مؤمَّن</span>')+'</td>'
+      + '<td>'+(e.insuranceEntity ? escapeHtml(e.insuranceEntity) : '<span class="empty-note">—</span>')+'</td>'
+      + '<td class="num mono">'+escapeHtml(e.insuranceNumber||'—')+'</td>'
+      + '<td>'+(e.contractType ? escapeHtml(e.contractType) : '<span class="badge warn">غير محدد</span>')+'</td>'
+      + '<td>'+(calcContributionPeriod(e) || '<span class="empty-note">—</span>')+'</td>'
+      + '<td>'+(e.contractEndDate ? (fmtDate(e.contractEndDate)+(badge?'<div style="margin-top:4px">'+badge+'</div>':'')) : '<span class="empty-note">—</span>')+'</td>'
+      + '</tr>';
+  }).join('') || '<tr><td colspan="8" class="empty-note">لا يوجد موظفون مطابقون</td></tr>';
+
+  const expiringCount = employeesOf(UI.activeCompany).filter(function(e){ return empStatus(e)==='active' && !!contractAlertInfo(e); }).length;
+  const insFilters = [['all','الكل'],['insured','مؤمَّن'],['uninsured','غير مؤمَّن'],['incomplete','بيانات ناقصة'],['expiring','عقود قريبة من الانتهاء ('+expiringCount+')']];
+  const chips = insFilters.map(function(o){
+    return '<button class="filter-chip ins-filt'+(UI.insFilter===o[0]?' active':'')+'" data-filt="'+o[0]+'">'+o[1]+'</button>';
+  }).join('');
+
+  return ''
+    + '<div class="section-head"><div><h2>التأمينات والعقود</h2><p>'+list.length+' سجل نشط</p></div></div>'
+    + establishmentInsuranceHtml()
+    + '<div class="toolbar">'+chips+'</div>'
+    + '<div class="table-wrap"><table><thead><tr><th>الاسم</th><th>الشركة</th><th>حالة التأمين</th><th>جهة التأمين</th><th class="num">رقم التأمين</th><th>نوع العقد</th><th>مدة الاشتراك</th><th>تاريخ نهاية العقد</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+}
+function establishmentInsuranceHtml(){
+  if(UI.activeCompany!=='all'){
+    const co = companyById(UI.activeCompany);
+    if(!co) return '';
+    return '<div class="panel" style="margin-bottom:16px"><h3>بيانات تأمينات المنشأة</h3>'
+      + '<div class="grid" style="margin-top:4px">'
+      + gridItem('رقم المنشأة بالتأمينات الاجتماعية', co.establishmentInsuranceNumber)
+      + gridItem('مكتب التأمينات', co.insuranceOfficeName)
+      + '</div></div>';
+  }
+  const rows = companies().map(function(c){
+    return '<tr><td><div class="name-cell"><span class="dot" style="background:'+c.color+';width:8px;height:8px;border-radius:50%"></span>'+escapeHtml(c.name)+'</div></td>'
+      + '<td class="mono">'+(c.establishmentInsuranceNumber?escapeHtml(c.establishmentInsuranceNumber):'<span class="empty-note">—</span>')+'</td>'
+      + '<td>'+(c.insuranceOfficeName?escapeHtml(c.insuranceOfficeName):'<span class="empty-note">—</span>')+'</td></tr>';
+  }).join('') || '<tr><td colspan="3" class="empty-note">لا يوجد شركات</td></tr>';
+  return '<div class="panel" style="margin-bottom:16px"><h3>بيانات تأمينات المنشآت</h3>'
+    + '<div class="table-wrap" style="margin-top:8px"><table><thead><tr><th>الشركة</th><th>رقم المنشأة بالتأمينات</th><th>مكتب التأمينات</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+}
+
+/* ===================== الإجازات والمستندات ===================== */
+function viewLeave(){
+  const list = employeesOf(UI.activeCompany).filter(function(e){ return empStatus(e)==='active'; })
+    .slice().sort(function(a,b){ return (a.name||'').localeCompare(b.name||'','ar'); });
+  const sub = UI.leaveTab;
+  let body = '';
+  if(sub==='balances'){
+    const rows = list.map(function(e){
+      const co = companyById(e.company);
+      const bal = e.leaveBalance;
+      const balHtml = (bal===null||bal===undefined) ? '<span class="badge warn">غير مسجل</span>'
+        : (bal<0 ? '<span class="badge no">'+bal+' يوم</span>' : '<span class="mono">'+bal+' يوم</span>');
+      return '<tr><td><div class="name-cell"><span class="dot" style="background:'+co.color+';width:8px;height:8px;border-radius:50%"></span>'+escapeHtml(e.name)+'</div></td>'
+        + '<td>'+escapeHtml(co.name)+'</td><td>'+balHtml+'</td>'
+        + '<td class="row-actions"><button class="btn sm" data-leave="'+e.id+'">تعديل الرصيد</button></td></tr>';
+    }).join('') || '<tr><td colspan="4" class="empty-note">لا يوجد موظفون</td></tr>';
+    body = '<div class="table-wrap"><table><thead><tr><th>الاسم</th><th>الشركة</th><th>الرصيد الحالي</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  } else {
+    const rows = list.map(function(e){
+      const co = companyById(e.company);
+      return '<tr><td><div class="name-cell"><span class="dot" style="background:'+co.color+';width:8px;height:8px;border-radius:50%"></span>'+escapeHtml(e.name)+'</div></td>'
+        + '<td>'+escapeHtml(co.name)+'</td><td class="mono">'+e.documents.length+'</td>'
+        + '<td class="row-actions"><button class="btn sm" data-docs="'+e.id+'">إدارة المستندات</button></td></tr>';
+    }).join('') || '<tr><td colspan="4" class="empty-note">لا يوجد موظفون</td></tr>';
+    body = '<div class="table-wrap"><table><thead><tr><th>الاسم</th><th>الشركة</th><th>عدد المرفقات</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  }
+  return ''
+    + '<div class="section-head"><div><h2>الإجازات والمستندات</h2><p>'+list.length+' موظف نشط</p></div></div>'
+    + '<div class="toolbar">'
+    + '<button class="filter-chip leave-sub'+(sub==='balances'?' active':'')+'" data-sub="balances">أرصدة الإجازات</button>'
+    + '<button class="filter-chip leave-sub'+(sub==='documents'?' active':'')+'" data-sub="documents">المستندات</button>'
+    + '</div>'+body;
+}
+
+/* ===================== التقارير ===================== */
+function reportScope(){
+  let list = employeesOf(UI.activeCompany);
+  if(UI.search.trim()){
+    const q = UI.search.trim().toLowerCase();
+    list = list.filter(function(e){
+      return (e.name||'').toLowerCase().indexOf(q)>-1 || (e.nationalId||'').indexOf(q)>-1 || (e.insuranceNumber||'').indexOf(q)>-1;
+    });
+  }
+  return list.slice().sort(function(a,b){ return (a.name||'').localeCompare(b.name||'','ar'); });
+}
+function reportTabsHtml(){
+  const tabs = [
+    ['detailed','تفصيلي لكل موظف'],
+    ['insurance','المؤمَّن وغير المؤمَّن'],
+    ['newHires','موظفون جدد'],
+    ['resigned','من قدّم استقالة'],
+    ['terminated','من ترك الخدمة'],
+    ['retirement','قريبون من سن المعاش'],
+    ['leaveBalance','رصيد الإجازات']
+  ];
+  return tabs.map(function(t){
+    return '<button class="filter-chip report-tab'+(UI.reportTab===t[0]?' active':'')+'" data-rtab="'+t[0]+'">'+t[1]+'</button>';
+  }).join('');
+}
+function viewReports(){
+  const scope = reportScope();
+  const showCo = UI.activeCompany==='all';
+  let body = '';
+  let printBtnId = '';
+  let printLabel = 'طباعة التقرير';
+
+  if(UI.reportTab==='insurance'){
+    const active = scope.filter(function(e){ return empStatus(e)==='active'; });
+    const insured = active.filter(function(e){ return e.insured; });
+    const uninsured = active.filter(function(e){ return !e.insured; });
+    const pct = active.length ? Math.round(insured.length/active.length*100) : 0;
+    const kpis = kpiCard('عدد الموظفين النشطين', active.length, '')
+      + kpiCard('مؤمَّن عليهم', insured.length, pct+'%')
+      + kpiCard('غير مؤمَّن عليهم', uninsured.length, '');
+    function miniTable(title, arr, extraHead, extraRow){
+      const rows = arr.map(function(e){
+        const co = companyById(e.company);
+        return '<tr><td><div class="name-cell"><span class="dot" style="background:'+co.color+';width:8px;height:8px;border-radius:50%"></span>'+escapeHtml(e.name)+'</div></td>'
+          + (showCo ? '<td>'+escapeHtml(co.name)+'</td>' : '')
+          + '<td>'+(e.jobTitle?escapeHtml(e.jobTitle):'<span class="empty-note">—</span>')+'</td>'
+          + extraRow(e) + '</tr>';
+      }).join('') || '<tr><td colspan="'+(showCo?4:3)+'" class="empty-note">لا يوجد</td></tr>';
+      return '<div class="panel"><h3>'+title+' ('+arr.length+')</h3>'
+        + '<div class="table-wrap"><table><thead><tr><th>الاسم</th>'+(showCo?'<th>الشركة</th>':'')+'<th>الوظيفة</th>'+extraHead+'</tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+    }
+    body = '<div class="kpi-grid">'+kpis+'</div>'
+      + miniTable('المؤمَّن عليهم', insured, '<th>جهة التأمين</th><th class="num">رقم التأمين</th>', function(e){
+          return '<td>'+(e.insuranceEntity?escapeHtml(e.insuranceEntity):'<span class="empty-note">—</span>')+'</td><td class="num mono">'+escapeHtml(e.insuranceNumber||'—')+'</td>';
+        })
+      + miniTable('غير المؤمَّن عليهم', uninsured, '<th>نوع العقد</th>', function(e){
+          return '<td>'+(e.contractType?escapeHtml(e.contractType):'<span class="empty-note">—</span>')+'</td>';
+        });
+    printBtnId = 'btnPrintInsuranceReport';
+  }
+  else if(UI.reportTab==='newHires'){
+    const periods = [30,90,180,365];
+    const list = scope.filter(function(e){
+      if(!e.hireDate) return false;
+      const t = new Date(e.hireDate).getTime();
+      if(isNaN(t)) return false;
+      return (Date.now()-t)/86400000 <= UI.newHiresDays;
+    }).sort(function(a,b){ return new Date(b.hireDate)-new Date(a.hireDate); });
+    const periodChips = periods.map(function(p){
+      return '<button class="filter-chip newhires-period'+(UI.newHiresDays===p?' active':'')+'" data-days="'+p+'">آخر '+p+' يوم</button>';
+    }).join('');
+    const kpis = kpiCard('موظفون جدد', list.length, 'خلال آخر '+UI.newHiresDays+' يوم');
+    const rows = list.map(function(e){
+      const co = companyById(e.company);
+      return '<tr><td><div class="name-cell"><span class="dot" style="background:'+co.color+';width:8px;height:8px;border-radius:50%"></span>'+escapeHtml(e.name)+'</div></td>'
+        + (showCo ? '<td>'+escapeHtml(co.name)+'</td>' : '')
+        + '<td>'+(e.jobTitle?escapeHtml(e.jobTitle):'<span class="empty-note">—</span>')+'</td>'
+        + '<td>'+fmtDate(e.hireDate)+'</td>'
+        + '<td>'+(empStatus(e)==='active'?'<span class="badge ok">نشط</span>':'<span class="badge muted">منتهي</span>')+'</td></tr>';
+    }).join('') || '<tr><td colspan="'+(showCo?5:4)+'" class="empty-note">لا يوجد موظفون جدد خلال هذه الفترة</td></tr>';
+    body = '<div class="toolbar" style="margin-bottom:12px">'+periodChips+'</div>'
+      + '<div class="kpi-grid">'+kpis+'</div>'
+      + '<div class="table-wrap"><table><thead><tr><th>الاسم</th>'+(showCo?'<th>الشركة</th>':'')+'<th>الوظيفة</th><th>تاريخ التعيين</th><th>الحالة</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+    printBtnId = 'btnPrintNewHiresReport';
+  }
+  else if(UI.reportTab==='resigned'){
+    const list = scope.filter(function(e){ return empStatus(e)==='terminated' && e.terminationReason==='استقالة'; });
+    const kpis = kpiCard('عدد المستقيلين', list.length, '');
+    const rows = list.map(function(e){
+      const co = companyById(e.company);
+      return '<tr><td><div class="name-cell"><span class="dot" style="background:'+co.color+';width:8px;height:8px;border-radius:50%"></span>'+escapeHtml(e.name)+'</div></td>'
+        + (showCo ? '<td>'+escapeHtml(co.name)+'</td>' : '')
+        + '<td>'+(e.jobTitle?escapeHtml(e.jobTitle):'<span class="empty-note">—</span>')+'</td>'
+        + '<td>'+fmtDate(e.hireDate)+'</td>'
+        + '<td>'+fmtDate(e.terminationDate)+'</td>'
+        + '<td>'+(calcServiceDuration(e)||'<span class="empty-note">—</span>')+'</td></tr>';
+    }).join('') || '<tr><td colspan="'+(showCo?6:5)+'" class="empty-note">لا يوجد موظفون مسجَّل عليهم "استقالة" كسبب لترك الخدمة</td></tr>';
+    body = '<div class="kpi-grid">'+kpis+'</div>'
+      + '<div class="table-wrap"><table><thead><tr><th>الاسم</th>'+(showCo?'<th>الشركة</th>':'')+'<th>الوظيفة</th><th>تاريخ التعيين</th><th>تاريخ الاستقالة</th><th>مدة الخدمة</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+      + '<div class="hint" style="margin-top:10px">يعتمد هذا التقرير على اختيار "استقالة" في حقل "سبب ترك الخدمة" داخل بيانات الموظف.</div>';
+    printBtnId = 'btnPrintResignedReport';
+  }
+  else if(UI.reportTab==='terminated'){
+    const list = scope.filter(function(e){ return empStatus(e)==='terminated'; });
+    const rows = list.map(function(e){
+      const co = companyById(e.company);
+      return '<tr><td><div class="name-cell"><span class="dot" style="background:'+co.color+';width:8px;height:8px;border-radius:50%"></span>'+escapeHtml(e.name)+'</div></td>'
+        + (showCo ? '<td>'+escapeHtml(co.name)+'</td>' : '')
+        + '<td>'+(e.jobTitle?escapeHtml(e.jobTitle):'<span class="empty-note">—</span>')+'</td>'
+        + '<td>'+fmtDate(e.hireDate)+'</td>'
+        + '<td>'+fmtDate(e.terminationDate)+'</td>'
+        + '<td>'+(e.terminationReason?escapeHtml(e.terminationReason):'<span class="empty-note">—</span>')+'</td>'
+        + '<td>'+(calcServiceDuration(e)||'<span class="empty-note">—</span>')+'</td></tr>';
+    }).join('') || '<tr><td colspan="'+(showCo?7:6)+'" class="empty-note">لا يوجد موظفون تركوا الخدمة</td></tr>';
+    body = '<div class="table-wrap"><table><thead><tr><th>الاسم</th>'+(showCo?'<th>الشركة</th>':'')+'<th>الوظيفة</th><th>تاريخ التعيين</th><th>تاريخ ترك الخدمة</th><th>السبب</th><th>مدة الخدمة</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+    printBtnId = 'btnPrintTerminatedReport';
+  }
+  else if(UI.reportTab==='retirement'){
+    const list = scope.filter(function(e){
+      if(empStatus(e)!=='active' || !e.birthDate) return false;
+      const rem = yearsMonthsToRetirement(e.birthDate);
+      return rem && rem.years < UI.retirementWindowYears;
+    }).sort(function(a,b){
+      const ra = yearsMonthsToRetirement(a.birthDate), rb = yearsMonthsToRetirement(b.birthDate);
+      return (ra.years*12+ra.months) - (rb.years*12+rb.months);
+    });
+    const windowChips = [1,2,3,5].map(function(y){
+      return '<button class="filter-chip retire-window'+(UI.retirementWindowYears===y?' active':'')+'" data-ryears="'+y+'">خلال '+y+' سنوات</button>';
+    }).join('');
+    const noBirthCount = scope.filter(function(e){ return empStatus(e)==='active' && !e.birthDate; }).length;
+    const kpis = kpiCard('قريبون من سن المعاش', list.length, 'سن المعاش '+RETIREMENT_AGE+' سنة')
+      + kpiCard('بدون تاريخ ميلاد مسجَّل', noBirthCount, '');
+    const rows = list.map(function(e){
+      const co = companyById(e.company);
+      const rem = yearsMonthsToRetirement(e.birthDate);
+      const remText = rem.years===0 && rem.months===0 ? 'أقل من شهر' : ((rem.years?rem.years+(rem.years===1?' سنة':' سنوات'):'') + (rem.years&&rem.months?' و':'') + (rem.months?rem.months+(rem.months===1?' شهر':' أشهر'):''));
+      return '<tr><td><div class="name-cell"><span class="dot" style="background:'+co.color+';width:8px;height:8px;border-radius:50%"></span>'+escapeHtml(e.name)+'</div></td>'
+        + (showCo ? '<td>'+escapeHtml(co.name)+'</td>' : '')
+        + '<td>'+(e.jobTitle?escapeHtml(e.jobTitle):'<span class="empty-note">—</span>')+'</td>'
+        + '<td>'+fmtDate(e.birthDate)+'</td>'
+        + '<td class="mono">'+calcAge(e.birthDate)+'</td>'
+        + '<td>'+remText+'</td></tr>';
+    }).join('') || '<tr><td colspan="'+(showCo?6:5)+'" class="empty-note">لا يوجد موظفون ضمن هذا النطاق (تأكد من تسجيل تاريخ الميلاد)</td></tr>';
+    body = '<div class="toolbar" style="margin-bottom:12px">'+windowChips+'</div>'
+      + '<div class="kpi-grid">'+kpis+'</div>'
+      + '<div class="table-wrap"><table><thead><tr><th>الاسم</th>'+(showCo?'<th>الشركة</th>':'')+'<th>الوظيفة</th><th>تاريخ الميلاد</th><th>العمر</th><th>المتبقي لسن المعاش</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+    printBtnId = 'btnPrintRetirementReport';
+  }
+  else if(UI.reportTab==='leaveBalance'){
+    const withBal = scope.filter(function(e){ return e.leaveBalance!==null && e.leaveBalance!==undefined; });
+    const total = withBal.reduce(function(s,e){ return s+e.leaveBalance; }, 0);
+    const avg = withBal.length ? Math.round(total/withBal.length*10)/10 : 0;
+    const kpis = kpiCard('عدد الموظفين', scope.length, '')
+      + kpiCard('إجمالي أيام الرصيد', total, '')
+      + kpiCard('متوسط الرصيد', avg, '')
+      + kpiCard('بدون رصيد مسجل', scope.length-withBal.length, '');
+    const rows = scope.map(function(e){
+      const co = companyById(e.company);
+      const bal = e.leaveBalance;
+      const balHtml = (bal===null||bal===undefined) ? '<span class="badge warn">غير مسجل</span>'
+        : (bal<0 ? '<span class="badge no">'+bal+' يوم</span>' : '<span class="mono">'+bal+' يوم</span>');
+      return '<tr><td><div class="name-cell"><span class="dot" style="background:'+co.color+';width:8px;height:8px;border-radius:50%"></span>'+escapeHtml(e.name)+'</div></td>'
+        + (showCo ? '<td>'+escapeHtml(co.name)+'</td>' : '')
+        + '<td>'+(empStatus(e)==='active'?'<span class="badge ok">نشط</span>':'<span class="badge muted">منتهي</span>')+'</td>'
+        + '<td>'+balHtml+'</td></tr>';
+    }).join('') || '<tr><td colspan="'+(showCo?4:3)+'" class="empty-note">لا يوجد موظفون</td></tr>';
+    body = '<div class="kpi-grid">'+kpis+'</div><div class="table-wrap"><table><thead><tr><th>الاسم</th>'+(showCo?'<th>الشركة</th>':'')+'<th>الحالة</th><th>رصيد الإجازة</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+    printBtnId = 'btnPrintLeaveBalanceReport';
+  }
+  else {
+    const rows = scope.map(function(e){
+      const co = companyById(e.company);
+      const status = empStatus(e);
+      return '<tr><td><div class="name-cell"><span class="dot" style="background:'+co.color+';width:8px;height:8px;border-radius:50%"></span>'+escapeHtml(e.name)+'</div></td>'
+        + (showCo ? '<td>'+escapeHtml(co.name)+'</td>' : '')
+        + '<td>'+(e.jobTitle?escapeHtml(e.jobTitle):'<span class="empty-note">—</span>')+'</td>'
+        + '<td>'+(status==='active'?'<span class="badge ok">نشط</span>':'<span class="badge muted">منتهي</span>')+'</td>'
+        + '<td>'+(e.insured?'<span class="badge ok">مؤمَّن</span>':'<span class="badge no">غير مؤمَّن</span>')+'</td>'
+        + '<td class="row-actions"><button class="btn sm" data-print-emp="'+e.id+'">طباعة الملف</button></td></tr>';
+    }).join('') || '<tr><td colspan="'+(showCo?6:5)+'" class="empty-note">لا يوجد موظفون مطابقون</td></tr>';
+    body = '<div class="table-wrap"><table><thead><tr><th>الاسم</th>'+(showCo?'<th>الشركة</th>':'')+'<th>الوظيفة</th><th>الحالة</th><th>التأمين</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+    printBtnId = 'btnPrintAllDetailed';
+  }
+
+  return ''
+    + '<div class="section-head"><div><h2>التقارير</h2><p>'+scope.length+' موظف ضمن النطاق الحالي'+(UI.activeCompany!=='all' ? ' — '+escapeHtml(companyById(UI.activeCompany) ? companyById(UI.activeCompany).name : '') : '')+'</p></div>'
+    + '<button class="btn primary" id="'+printBtnId+'">'+printLabel+'</button></div>'
+    + '<div class="toolbar">'
+    + '<div class="search-box"><input id="empSearch" placeholder="ابحث بالاسم أو الرقم القومي..." value="'+escapeHtml(UI.search)+'"></div>'
+    + reportTabsHtml()
+    + '</div>'
+    + body;
+}
+
+/* ===================== ربط أحداث الوحدات ===================== */
+function bindModuleEvents(){
+  const s = document.getElementById('empSearch');
+  if(s){
+    s.addEventListener('input', function(ev){ UI.search = ev.target.value; renderModule(); });
+    if(UI.search){ s.focus(); const v=s.value; s.setSelectionRange(v.length, v.length); }
+  }
+  document.querySelectorAll('.emp-filt').forEach(function(btn){
+    btn.addEventListener('click', function(){ UI.empFilter = btn.dataset.filt; renderModule(); });
+  });
+  document.querySelectorAll('.ins-filt').forEach(function(btn){
+    btn.addEventListener('click', function(){ UI.insFilter = btn.dataset.filt; renderModule(); });
+  });
+  document.querySelectorAll('.leave-sub').forEach(function(btn){
+    btn.addEventListener('click', function(){ UI.leaveTab = btn.dataset.sub; renderModule(); });
+  });
+  document.querySelectorAll('.clickable[data-emp]').forEach(function(el){
+    el.addEventListener('click', function(ev){
+      if(ev.target.closest('[data-del]')) return;
+      openEmployeeModal(el.dataset.emp, el.dataset.tab||'basic');
+    });
+  });
+  document.querySelectorAll('[data-del]').forEach(function(btn){
+    btn.addEventListener('click', function(ev){ ev.stopPropagation(); confirmDeleteEmployee(btn.dataset.del); });
+  });
+  document.querySelectorAll('.alert-row[data-emp]').forEach(function(row){
+    row.addEventListener('click', function(){ openEmployeeModal(row.dataset.emp, row.dataset.tab||'basic'); });
+  });
+  document.querySelectorAll('[data-leave]').forEach(function(btn){
+    btn.addEventListener('click', function(){ openLeaveAdjustModal(btn.dataset.leave); });
+  });
+  document.querySelectorAll('[data-docs]').forEach(function(btn){
+    btn.addEventListener('click', function(){ openEmployeeModal(btn.dataset.docs,'documents'); });
+  });
+  const addBtn = document.getElementById('btnAddEmployeeInline');
+  if(addBtn) addBtn.addEventListener('click', function(){ openEmployeeModal(null,'basic'); });
+  const printCoBtn = document.getElementById('btnPrintCompany');
+  if(printCoBtn) printCoBtn.addEventListener('click', function(){ printCompanyReport(UI.activeCompany); });
+  document.querySelectorAll('.report-tab').forEach(function(btn){
+    btn.addEventListener('click', function(){ UI.reportTab = btn.dataset.rtab; renderModule(); });
+  });
+  document.querySelectorAll('.newhires-period').forEach(function(btn){
+    btn.addEventListener('click', function(){ UI.newHiresDays = Number(btn.dataset.days); renderModule(); });
+  });
+  document.querySelectorAll('.retire-window').forEach(function(btn){
+    btn.addEventListener('click', function(){ UI.retirementWindowYears = Number(btn.dataset.ryears); renderModule(); });
+  });
+  document.querySelectorAll('[data-print-emp]').forEach(function(btn){
+    btn.addEventListener('click', function(ev){ ev.stopPropagation(); printEmployeeProfile(btn.dataset.printEmp); });
+  });
+  const btnPrintAllDetailed = document.getElementById('btnPrintAllDetailed');
+  if(btnPrintAllDetailed) btnPrintAllDetailed.addEventListener('click', function(){ printAllDetailedReport(UI.activeCompany, reportScope()); });
+  const btnPrintInsuranceReport = document.getElementById('btnPrintInsuranceReport');
+  if(btnPrintInsuranceReport) btnPrintInsuranceReport.addEventListener('click', function(){
+    printInsuranceStatusReport(UI.activeCompany, reportScope().filter(function(e){ return empStatus(e)==='active'; }));
+  });
+  const btnPrintTerminatedReport = document.getElementById('btnPrintTerminatedReport');
+  if(btnPrintTerminatedReport) btnPrintTerminatedReport.addEventListener('click', function(){
+    printTerminatedReport(UI.activeCompany, reportScope().filter(function(e){ return empStatus(e)==='terminated'; }));
+  });
+  const btnPrintNewHiresReport = document.getElementById('btnPrintNewHiresReport');
+  if(btnPrintNewHiresReport) btnPrintNewHiresReport.addEventListener('click', function(){
+    const list = reportScope().filter(function(e){
+      if(!e.hireDate) return false;
+      const t = new Date(e.hireDate).getTime();
+      if(isNaN(t)) return false;
+      return (Date.now()-t)/86400000 <= UI.newHiresDays;
+    }).sort(function(a,b){ return new Date(b.hireDate)-new Date(a.hireDate); });
+    printNewHiresReport(UI.activeCompany, list, UI.newHiresDays);
+  });
+  const btnPrintResignedReport = document.getElementById('btnPrintResignedReport');
+  if(btnPrintResignedReport) btnPrintResignedReport.addEventListener('click', function(){
+    printResignedReport(UI.activeCompany, reportScope().filter(function(e){ return empStatus(e)==='terminated' && e.terminationReason==='استقالة'; }));
+  });
+  const btnPrintRetirementReport = document.getElementById('btnPrintRetirementReport');
+  if(btnPrintRetirementReport) btnPrintRetirementReport.addEventListener('click', function(){
+    const list = reportScope().filter(function(e){
+      if(empStatus(e)!=='active' || !e.birthDate) return false;
+      const rem = yearsMonthsToRetirement(e.birthDate);
+      return rem && rem.years < UI.retirementWindowYears;
+    }).sort(function(a,b){
+      const ra = yearsMonthsToRetirement(a.birthDate), rb = yearsMonthsToRetirement(b.birthDate);
+      return (ra.years*12+ra.months) - (rb.years*12+rb.months);
+    });
+    printRetirementReport(UI.activeCompany, list, UI.retirementWindowYears);
+  });
+  const btnPrintLeaveBalanceReport = document.getElementById('btnPrintLeaveBalanceReport');
+  if(btnPrintLeaveBalanceReport) btnPrintLeaveBalanceReport.addEventListener('click', function(){ printLeaveBalanceReport(UI.activeCompany, reportScope()); });
+
+  const formsSelect = document.getElementById('formsEmployeeSelect');
+  if(formsSelect) formsSelect.addEventListener('change', function(){ UI.formsEmployeeId = formsSelect.value || null; });
+  document.querySelectorAll('[data-form]').forEach(function(btn){
+    btn.addEventListener('click', function(){ generateFormDoc(btn.dataset.form); });
+  });
+  document.querySelectorAll('[data-form-upload]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      pendingCustomFormKey = btn.dataset.formUpload;
+      document.getElementById('fileCustomFormUpload').click();
+    });
+  });
+  document.querySelectorAll('[data-form-revert]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      if(STATE.customForms) delete STATE.customForms[btn.dataset.formRevert];
+      persistState(STATE);
+      renderModule();
+      toast('تم الرجوع للنموذج الافتراضي');
+    });
+  });
+}
+
+/* ===================== نافذة الموظف (إضافة/تعديل) ===================== */
+function currentModalEmployee(){
+  if(UI.editingId) return STATE.employees.find(function(x){ return x.id===UI.editingId; });
+  if(!newEmployeeDraft) newEmployeeDraft = emptyEmployee();
+  return newEmployeeDraft;
+}
+function openEmployeeModal(id, tab){
+  UI.editingId = id || null;
+  if(!id){ newEmployeeDraft = emptyEmployee(); modalSnapshot = null; }
+  else {
+    const real = STATE.employees.find(function(x){ return x.id===id; });
+    modalSnapshot = real ? {jobTitle:real.jobTitle, department:real.department, division:real.division, directManager:real.directManager} : null;
+  }
+  UI.modalTab = tab || 'basic';
+  renderEmployeeModal();
+}
+function field(label,id,type,val,required){
+  return '<div class="field"><label>'+escapeHtml(label)+(required?' *':'')+'</label><input id="'+id+'" type="'+type+'" value="'+escapeHtml(val||'')+'"></div>';
+}
+function selectField(label,id,optsHtml){
+  return '<div class="field"><label>'+escapeHtml(label)+'</label><select id="'+id+'">'+optsHtml+'</select></div>';
+}
+function contractOptions(cur){
+  const opts = ['','دوام كامل','دوام جزئي','تكليف','مؤقت','تعاقد خارجي'];
+  return opts.map(function(o){ return '<option value="'+o+'"'+(cur===o?' selected':'')+'>'+(o||'— غير محدد —')+'</option>'; }).join('');
+}
+function employeeBasicForm(e){
+  const coOpts = companies().map(function(c){ return '<option value="'+c.id+'"'+(e.company===c.id?' selected':'')+'>'+escapeHtml(c.name)+'</option>'; }).join('');
+  const co = companyById(e.company);
+  const initials = (e.name||'؟').trim().split(/\s+/).slice(0,2).map(function(w){ return w[0]; }).join('');
+  const photoHtml = e.photo
+    ? '<img src="'+e.photo+'" alt="">'
+    : '<span class="ph-initials" style="background:'+(co?co.color:'#999')+'">'+escapeHtml(initials)+'</span>';
+  return '<div class="photo-upload">'
+    + '<div class="photo-wrap">'+photoHtml+'</div>'
+    + '<div class="actions">'
+    + '<input type="file" id="f_photoFile" accept="image/*" style="display:none">'
+    + '<button type="button" class="btn sm" id="btnUploadPhoto">رفع صورة</button>'
+    + (e.photo ? '<button type="button" class="btn sm danger" id="btnRemovePhoto">إزالة الصورة</button>' : '')
+    + '</div></div>'
+    + '<div class="form-grid">'
+    + field('الاسم الكامل','f_name','text',e.name,true)
+    + selectField('الشركة','f_company',coOpts)
+    + field('المسمى الوظيفي','f_jobTitle','text',e.jobTitle)
+    + field('القسم','f_department','text',e.department)
+    + field('الإدارة','f_division','text',e.division)
+    + field('المدير المباشر','f_directManager','text',e.directManager)
+    + field('الرقم القومي','f_nationalId','text',e.nationalId)
+    + field('رقم التليفون','f_phone','tel',e.phone)
+    + field('تاريخ الميلاد','f_birthDate','date',e.birthDate)
+    + field('تاريخ التعيين','f_hireDate','date',e.hireDate)
+    + field('تاريخ ترك الخدمة','f_terminationDate','date',e.terminationDate)
+    + selectField('سبب ترك الخدمة','f_terminationReason', terminationReasonOptions(e.terminationReason))
+    + field('تاريخ التأمين','f_insuranceDate','date',e.insuranceDate)
+    + field('مدة فترة الاختبار (بالشهر)','f_probationMonths','number',e.probationMonths)
+    + '<div class="field span2"><label>العنوان</label><input id="f_address" type="text" value="'+escapeHtml(e.address||'')+'"></div>'
+    + '<div class="field span2"><label>ملاحظات</label><textarea id="f_notes" rows="2">'+escapeHtml(e.notes||'')+'</textarea></div>'
+    + '</div>';
+}
+function employeeInsuranceForm(e){
+  const cp = calcContributionPeriod(e);
+  const cpDisplay = e.insured
+    ? (e.hireDate ? (cp || 'غير محسوبة (تأكد من تاريخ التعيين)') : 'أدخل تاريخ التعيين في البيانات الأساسية أولاً')
+    : 'لا يوجد اشتراك — الموظف غير مؤمَّن';
+  const badge = contractStatusBadge(e);
+  return '<div class="toggle-row"><div><b>حالة التأمين</b><div class="hint">مؤمَّن أو غير مؤمَّن حالياً</div></div>'
+    + '<label class="switch"><input type="checkbox" id="f_insured" '+(e.insured?'checked':'')+'><span class="track"></span><span class="thumb"></span></label></div>'
+    + '<div class="form-grid" style="margin-top:12px">'
+    + field('جهة التأمين','f_insuranceEntity','text',e.insuranceEntity)
+    + field('رقم التأمين','f_insuranceNumber','text',e.insuranceNumber)
+    + field('فرع مكتب التأمينات','f_officeBranch','text',e.officeBranch)
+    + '<div class="field"><label>مدة الاشتراك (محسوبة تلقائيًا من تاريخ التعيين)</label><input type="text" value="'+escapeHtml(cpDisplay)+'" disabled></div>'
+    + selectField('نوع العقد','f_contractType', contractOptions(e.contractType))
+    + '<div class="field"><label>تاريخ نهاية العقد</label><input id="f_contractEndDate" type="date" value="'+escapeHtml(e.contractEndDate||'')+'">'
+    + (badge ? '<div class="hint" style="margin-top:6px">'+badge+'</div>' : '<div class="hint">سيتم تنبيهك تلقائياً قبل الانتهاء بـ ٣ أشهر</div>')
+    + '</div>'
+    + '</div>';
+}
+function employeeLeaveTab(e){
+  const log = e.leaveLog.slice().reverse().map(function(l){
+    return '<div class="row"><span>'+fmtDate(l.date)+' — '+escapeHtml(l.reason||'')+'</span><span class="mono">'+(l.delta>0?'+':'')+l.delta+'</span></div>';
+  }).join('') || '<div class="empty-note">لا يوجد سجل تعديلات بعد</div>';
+  return '<div class="field"><label>الرصيد الحالي (بالأيام)</label><input id="f_leaveBalance" type="number" value="'+(e.leaveBalance===null||e.leaveBalance===undefined?'':e.leaveBalance)+'" placeholder="غير مسجل"></div>'
+    + '<h3 style="margin-top:16px;font-size:13px">سجل التعديلات</h3><div class="leave-log">'+log+'</div>';
+}
+function employeeCareerTab(e){
+  const salaryDisplay = (e.salary===null||e.salary===undefined||e.salary==='') ? 'غير مسجل' : Number(e.salary).toLocaleString('ar-EG')+' جنيه';
+  const salaryLog = (e.salaryLog||[]).slice().reverse().map(function(l){
+    const oldTxt = (l.oldSalary===null||l.oldSalary===undefined) ? 'غير مسجل' : Number(l.oldSalary).toLocaleString('ar-EG');
+    return '<div class="row"><span>'+fmtDate(l.date)+' — '+escapeHtml(l.reason||'تعديل راتب')+'</span><span class="mono">'+oldTxt+' ← '+Number(l.newSalary).toLocaleString('ar-EG')+'</span></div>';
+  }).join('') || '<div class="empty-note">لا يوجد سجل تعديلات راتب بعد</div>';
+  const historyLog = (e.historyLog||[]).slice().reverse().map(function(h){
+    return '<div class="row"><span>'+fmtDate(h.date)+' — '+escapeHtml(h.text)+'</span></div>';
+  }).join('') || '<div class="empty-note">لا يوجد سجل تغييرات وظيفية بعد</div>';
+  const pi = probationInfo(e);
+  const probationHtml = pi
+    ? '<div class="hint" style="margin-top:8px">لسه تحت فترة الاختبار — تنتهي في '+fmtDate(pi.endDate)+' (باقي '+pi.days+' يوم)</div>'
+    : (e.probationMonths && e.hireDate ? '<div class="hint" style="margin-top:8px">انتهت فترة الاختبار</div>' : '');
+  return '<div class="field"><label>الراتب الحالي</label><div class="mono" style="font-size:20px;font-weight:800">'+salaryDisplay+'</div></div>'
+    + probationHtml
+    + '<div class="leave-adjust" style="margin-top:10px"><input type="number" id="f_salaryNew" placeholder="الراتب الجديد"><input type="text" id="f_salaryReason" placeholder="السبب (اختياري): زيادة سنوية، ترقية..." style="flex:1"><button type="button" class="btn primary" id="btnApplySalary">تطبيق</button></div>'
+    + '<h3 style="margin-top:18px;font-size:13px">سجل تعديلات الراتب</h3><div class="leave-log">'+salaryLog+'</div>'
+    + '<h3 style="margin-top:16px;font-size:13px">السجل الوظيفي (المسمى/القسم/الإدارة/المدير المباشر)</h3><div class="leave-log">'+historyLog+'</div>';
+}
+function employeeDocsTab(e){
+  const docs = e.documents.map(function(d){
+    return '<div class="doc-row"><span class="fi">'+(d.type==='application/pdf'?'PDF':'IMG')+'</span>'
+      + '<div class="meta"><div class="n">'+escapeHtml(d.name)+'</div><div class="d">'+fmtDate(d.uploadedAt)+' • '+fmtSize(d.size)+'</div></div>'
+      + '<button class="icon-btn" data-doc-view="'+d.id+'" title="عرض">↗</button>'
+      + '<button class="icon-btn" data-doc-del="'+d.id+'" title="حذف">✕</button></div>';
+  }).join('') || '<div class="empty-note">لا توجد مستندات مرفقة</div>';
+  return '<div class="doc-list">'+docs+'</div>'
+    + '<div class="upload-drop" id="docUploadZone">اضغط لرفع مستند (PDF أو صورة، أقل من 10 ميجابايت)</div>'
+    + '<div class="hint" style="margin-top:8px">المستندات تُخزَّن على تخزين سحابي مشترك (Supabase Storage) — متاحة لكل المستخدمين من أي جهاز</div>';
+}
+function renderEmployeeModal(){
+  const isNew = !UI.editingId;
+  const e = currentModalEmployee();
+  if(!isNew && !e){ closeModal(); return; }
+  const tabs = [['basic','بيانات أساسية'],['insurance','التأمين والعقد'],['career','المسار الوظيفي'],['leave','الإجازة'],['documents','المستندات']];
+  const tabsHtml = tabs.map(function(t){
+    const disabled = isNew && (t[0]==='leave' || t[0]==='documents' || t[0]==='career');
+    return '<button class="modal-tab'+(UI.modalTab===t[0]?' active':'')+'" data-mtab="'+t[0]+'"'+(disabled?' disabled':'')+'>'+t[1]+'</button>';
+  }).join('');
+
+  let bodyHtml = '';
+  if(UI.modalTab==='basic') bodyHtml = employeeBasicForm(e);
+  else if(UI.modalTab==='insurance') bodyHtml = employeeInsuranceForm(e);
+  else if(UI.modalTab==='career') bodyHtml = employeeCareerTab(e);
+  else if(UI.modalTab==='leave') bodyHtml = employeeLeaveTab(e);
+  else if(UI.modalTab==='documents') bodyHtml = employeeDocsTab(e);
+
+  const html = ''
+    + '<div class="overlay" id="empOverlay"><div class="modal wide">'
+    + '<div class="modal-head"><h3>'+(isNew?'إضافة موظف جديد':escapeHtml(e.name||'موظف'))+'</h3><button class="modal-close" id="btnCloseModal">✕</button></div>'
+    + '<div class="modal-tabs">'+tabsHtml+'</div>'
+    + '<div class="modal-body" id="modalBody">'+bodyHtml+'</div>'
+    + '<div class="modal-foot">'
+    + '<div style="display:flex;gap:8px">'
+    + '<button class="btn danger" id="btnDeleteInModal" style="'+(isNew?'visibility:hidden':'')+'">حذف الموظف</button>'
+    + (isNew ? '' : '<button class="btn" id="btnPrintEmployee">طباعة الملف</button>')
+    + '</div>'
+    + '<div style="display:flex;gap:8px"><button class="btn" id="btnCancelModal">إلغاء</button><button class="btn primary" id="btnSaveEmployee">حفظ</button></div>'
+    + '</div></div></div>';
+  document.getElementById('modalHost').innerHTML = html;
+  bindModalEvents(e, isNew);
+}
+function val(id){ const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+function syncFormToDraft(e){
+  if(UI.modalTab==='basic'){
+    e.name = val('f_name');
+    e.company = val('f_company') || e.company;
+    e.jobTitle = val('f_jobTitle');
+    e.department = val('f_department');
+    e.division = val('f_division');
+    e.directManager = val('f_directManager');
+    e.nationalId = val('f_nationalId');
+    e.phone = val('f_phone');
+    e.birthDate = val('f_birthDate') || null;
+    e.hireDate = val('f_hireDate') || null;
+    e.terminationDate = val('f_terminationDate') || null;
+    e.terminationReason = val('f_terminationReason');
+    e.insuranceDate = val('f_insuranceDate') || null;
+    const pm = val('f_probationMonths');
+    e.probationMonths = (pm==='') ? null : Number(pm);
+    e.address = val('f_address');
+    e.notes = val('f_notes');
+  } else if(UI.modalTab==='insurance'){
+    const chk = document.getElementById('f_insured');
+    e.insured = chk ? chk.checked : e.insured;
+    e.insuranceEntity = val('f_insuranceEntity');
+    e.insuranceNumber = val('f_insuranceNumber');
+    e.officeBranch = val('f_officeBranch');
+    e.contractType = val('f_contractType');
+    e.contractEndDate = val('f_contractEndDate') || null;
+  } else if(UI.modalTab==='leave'){
+    const b = val('f_leaveBalance');
+    e.leaveBalance = (b==='') ? null : Number(b);
+  }
+}
+function bindModalEvents(e, isNew){
+  document.getElementById('btnCloseModal').addEventListener('click', closeModal);
+  document.getElementById('btnCancelModal').addEventListener('click', closeModal);
+  document.getElementById('empOverlay').addEventListener('click', function(ev){ if(ev.target.id==='empOverlay') closeModal(); });
+  document.querySelectorAll('.modal-tab').forEach(function(t){
+    t.addEventListener('click', function(){
+      if(t.disabled) return;
+      syncFormToDraft(e);
+      UI.modalTab = t.dataset.mtab;
+      renderEmployeeModal();
+    });
+  });
+  document.getElementById('btnSaveEmployee').addEventListener('click', function(){ saveEmployeeFromModal(e, isNew); });
+  const delBtn = document.getElementById('btnDeleteInModal');
+  if(delBtn && !isNew) delBtn.addEventListener('click', function(){ closeModal(); confirmDeleteEmployee(e.id); });
+  const printBtn = document.getElementById('btnPrintEmployee');
+  if(printBtn) printBtn.addEventListener('click', function(){ printEmployeeProfile(e.id); });
+
+  const applySalaryBtn = document.getElementById('btnApplySalary');
+  if(applySalaryBtn) applySalaryBtn.addEventListener('click', function(){
+    const raw = document.getElementById('f_salaryNew').value;
+    if(raw===''){ toast('اكتب الراتب الجديد','error'); return; }
+    const newSal = Number(raw);
+    if(isNaN(newSal) || newSal<0){ toast('اكتب رقم صحيح','error'); return; }
+    const reason = document.getElementById('f_salaryReason').value.trim();
+    const real = STATE.employees.find(function(x){ return x.id===e.id; });
+    if(!real) return;
+    const old = real.salary;
+    real.salary = newSal;
+    if(!real.salaryLog) real.salaryLog = [];
+    real.salaryLog.push({date:new Date().toISOString().slice(0,10), oldSalary:(old===null||old===undefined?null:old), newSalary:newSal, reason: reason||'تعديل راتب'});
+    real.updatedAt = new Date().toISOString();
+    e.salary = real.salary; e.salaryLog = real.salaryLog;
+    persistState(STATE);
+    renderEmployeeModal();
+    toast('تم تحديث الراتب');
+  });
+
+  const uploadPhotoBtn = document.getElementById('btnUploadPhoto');
+  if(uploadPhotoBtn) uploadPhotoBtn.addEventListener('click', function(){ document.getElementById('f_photoFile').click(); });
+  const removePhotoBtn = document.getElementById('btnRemovePhoto');
+  if(removePhotoBtn) removePhotoBtn.addEventListener('click', function(){
+    syncFormToDraft(e);
+    e.photo = null;
+    renderEmployeeModal();
+  });
+  const photoFile = document.getElementById('f_photoFile');
+  if(photoFile) photoFile.addEventListener('change', function(ev){
+    const file = ev.target.files[0];
+    if(!file) return;
+    if(file.size > 1024*1024){ toast('حجم الصورة أكبر من 1 ميجابايت — برجاء صورة أصغر','error'); ev.target.value=''; return; }
+    const reader = new FileReader();
+    reader.onload = function(){
+      syncFormToDraft(e);
+      e.photo = reader.result;
+      renderEmployeeModal();
+    };
+    reader.readAsDataURL(file);
+  });
+
+  const zone = document.getElementById('docUploadZone');
+  if(zone) zone.addEventListener('click', function(){ pendingDocEmployee = e.id; document.getElementById('fileDocUpload').click(); });
+  document.querySelectorAll('[data-doc-del]').forEach(function(b){
+    b.addEventListener('click', function(){
+      const real = STATE.employees.find(function(x){ return x.id===e.id; });
+      if(!real) return;
+      const doc = real.documents.find(function(d){ return d.id===b.dataset.docDel; });
+      real.documents = real.documents.filter(function(d){ return d.id!==b.dataset.docDel; });
+      persistState(STATE);
+      renderEmployeeModal();
+      if(doc && doc.path && sb){
+        sb.storage.from(DOCS_BUCKET).remove([doc.path]).catch(function(err){ console.warn('تعذر حذف الملف من التخزين السحابي', err); });
+      }
+    });
+  });
+  document.querySelectorAll('[data-doc-view]').forEach(function(b){
+    b.addEventListener('click', function(){
+      const real = STATE.employees.find(function(x){ return x.id===e.id; });
+      const d = real ? real.documents.find(function(x){ return x.id===b.dataset.docView; }) : null;
+      if(d) window.open(d.url || d.dataUrl, '_blank');
+    });
+  });
+}
+function saveEmployeeFromModal(e, isNew){
+  syncFormToDraft(e);
+  if(!e.name){ toast('اسم الموظف مطلوب','error'); return; }
+  if(!e.company){ toast('اختر الشركة','error'); return; }
+  if(!e.historyLog) e.historyLog = [];
+  if(!isNew && modalSnapshot){
+    const today = new Date().toISOString().slice(0,10);
+    [['jobTitle','المسمى الوظيفي'],['department','القسم'],['division','الإدارة'],['directManager','المدير المباشر']].forEach(function(f){
+      const key=f[0], label=f[1];
+      if((modalSnapshot[key]||'') !== (e[key]||'')){
+        e.historyLog.push({date:today, text:'تغيير '+label+' من "'+(modalSnapshot[key]||'—')+'" إلى "'+(e[key]||'—')+'"'});
+      }
+    });
+  }
+  if(isNew){
+    e.id = uid('emp');
+    e.createdAt = new Date().toISOString();
+    e.updatedAt = new Date().toISOString();
+    STATE.employees.push(e);
+    newEmployeeDraft = null;
+  } else {
+    e.updatedAt = new Date().toISOString();
+  }
+  persistState(STATE);
+  closeModal();
+  renderModule(); renderCompanyBar();
+  toast(isNew ? 'تم إضافة الموظف' : 'تم حفظ التعديلات');
+}
+function closeModal(){
+  document.getElementById('modalHost').innerHTML = '';
+  UI.editingId = null;
+  newEmployeeDraft = null;
+  modalSnapshot = null;
+}
+function confirmDeleteEmployee(id){
+  const e = STATE.employees.find(function(x){ return x.id===id; });
+  if(!e) return;
+  if(!confirm('هل أنت متأكد من حذف "'+e.name+'"؟ لا يمكن التراجع عن هذا الإجراء.')) return;
+  STATE.employees = STATE.employees.filter(function(x){ return x.id!==id; });
+  persistState(STATE);
+  renderModule(); renderCompanyBar();
+  toast('تم حذف الموظف');
+}
+
+/* ===================== تعديل رصيد الإجازة ===================== */
+function openLeaveAdjustModal(id){
+  const e = STATE.employees.find(function(x){ return x.id===id; });
+  if(!e) return;
+  const html = '<div class="overlay" id="leaveOverlay"><div class="modal" style="max-width:420px">'
+    + '<div class="modal-head"><h3>تعديل رصيد الإجازة — '+escapeHtml(e.name)+'</h3><button class="modal-close" id="btnCloseLeave">✕</button></div>'
+    + '<div class="modal-body">'
+    + '<div class="field"><label>الرصيد الحالي</label><div class="mono" style="font-size:20px;font-weight:800">'+(e.leaveBalance===null||e.leaveBalance===undefined?'غير مسجل':e.leaveBalance+' يوم')+'</div></div>'
+    + '<div class="leave-adjust"><input type="number" id="leaveDelta" placeholder="مثال: -2 أو 5"><input type="text" id="leaveReason" placeholder="السبب (اختياري)" style="flex:1"><button class="btn primary" id="btnApplyLeave">تطبيق</button></div>'
+    + '</div></div></div>';
+  document.getElementById('modalHost').innerHTML = html;
+  document.getElementById('btnCloseLeave').addEventListener('click', closeModal);
+  document.getElementById('leaveOverlay').addEventListener('click', function(ev){ if(ev.target.id==='leaveOverlay') closeModal(); });
+  document.getElementById('btnApplyLeave').addEventListener('click', function(){
+    const d = Number(document.getElementById('leaveDelta').value);
+    if(!d){ toast('اكتب رقم صحيح مختلف عن الصفر','error'); return; }
+    const reason = document.getElementById('leaveReason').value.trim();
+    e.leaveBalance = (e.leaveBalance||0) + d;
+    e.leaveLog.push({date: new Date().toISOString().slice(0,10), delta:d, reason: reason||'تعديل يدوي'});
+    e.updatedAt = new Date().toISOString();
+    persistState(STATE);
+    closeModal(); renderModule();
+    toast('تم تحديث الرصيد');
+  });
+}
+
+/* ===================== تغيير كلمة المرور (للمستخدم الحالي) ===================== */
+function openChangeMyPasswordModal(){
+  const html = '<div class="overlay" id="myPwOverlay"><div class="modal" style="max-width:420px">'
+    + '<div class="modal-head"><h3>تغيير كلمة المرور</h3><button class="modal-close" id="btnCloseMyPw">✕</button></div>'
+    + '<div class="modal-body">'
+    + '<div class="field"><label>كلمة المرور الجديدة</label><div class="pw-field"><input id="myNewPassword" type="password" placeholder="6 حروف/أرقام على الأقل" autocomplete="new-password"><button type="button" class="pw-toggle" data-toggle-for="myNewPassword">👁</button></div></div>'
+    + '<div class="field"><label>تأكيد كلمة المرور</label><div class="pw-field"><input id="myNewPassword2" type="password" placeholder="أعد كتابة كلمة المرور" autocomplete="new-password"><button type="button" class="pw-toggle" data-toggle-for="myNewPassword2">👁</button></div></div>'
+    + '</div>'
+    + '<div class="modal-foot"><div></div><button class="btn primary" id="btnSaveMyPw">حفظ كلمة المرور</button></div>'
+    + '</div></div>';
+  document.getElementById('modalHost').innerHTML = html;
+  document.querySelectorAll('#myPwOverlay .pw-toggle').forEach(attachPasswordToggle);
+  document.getElementById('btnCloseMyPw').addEventListener('click', closeModal);
+  document.getElementById('myPwOverlay').addEventListener('click', function(ev){ if(ev.target.id==='myPwOverlay') closeModal(); });
+  document.getElementById('btnSaveMyPw').addEventListener('click', async function(){
+    const p1 = document.getElementById('myNewPassword').value;
+    const p2 = document.getElementById('myNewPassword2').value;
+    if(!p1 || p1.length < 6){ toast('كلمة المرور لازم تكون 6 حروف/أرقام على الأقل','error'); return; }
+    if(p1 !== p2){ toast('كلمة المرور وتأكيدها غير متطابقين','error'); return; }
+    const btn = document.getElementById('btnSaveMyPw');
+    btn.disabled = true; btn.textContent = 'جارٍ الحفظ...';
+    const { error } = await sb.rpc('app_change_own_password', { p_token: getSavedToken(), p_new_password: p1 });
+    btn.disabled = false; btn.textContent = 'حفظ كلمة المرور';
+    if(error){ toast('تعذر تغيير كلمة المرور: '+error.message, 'error'); return; }
+    toast('تم تغيير كلمة المرور بنجاح');
+    closeModal();
+  });
+}
+
+/* ===================== النسخ الاحتياطية التلقائية للبيانات (للمدير فقط) ===================== */
+function formatBackupDate(iso){
+  try{
+    const d = new Date(iso);
+    return d.toLocaleString('ar-EG', { dateStyle:'medium', timeStyle:'short' });
+  }catch(e){ return iso; }
+}
+async function openStateBackupsModal(){
+  const cu = getCurrentUser();
+  if(!cu || cu.role !== 'admin'){ toast('هذه الصفحة متاحة للمدير فقط','error'); return; }
+
+  document.getElementById('modalHost').innerHTML =
+    '<div class="overlay" id="backupsOverlay"><div class="modal" style="max-width:520px">'
+    + '<div class="modal-head"><h3>النسخ الاحتياطية</h3><button class="modal-close" id="btnCloseBackups">✕</button></div>'
+    + '<div class="modal-body"><div class="hint">بيتم حفظ نسخة من البيانات تلقائيًا قبل أي تعديل عليها. لو حصل أي مسح أو خطأ في البيانات، تقدر ترجع لأي نسخة من هنا.</div>'
+    + '<div id="backupsListWrap" style="margin-top:12px;">جارٍ التحميل...</div></div>'
+    + '<div class="modal-foot"><div></div><div></div></div>'
+    + '</div></div>';
+  document.getElementById('btnCloseBackups').addEventListener('click', closeModal);
+  document.getElementById('backupsOverlay').addEventListener('click', function(ev){ if(ev.target.id==='backupsOverlay') closeModal(); });
+
+  const { data, error } = await sb.rpc('app_admin_list_state_snapshots', { p_token: getSavedToken(), p_limit: 30 });
+  const wrap = document.getElementById('backupsListWrap');
+  if(error){ wrap.innerHTML = '<div class="hint">تعذر تحميل النسخ الاحتياطية: '+error.message+'</div>'; return; }
+  if(!data || !data.length){ wrap.innerHTML = '<div class="hint">لا توجد نسخ احتياطية محفوظة بعد.</div>'; return; }
+
+  wrap.innerHTML = data.map(function(row){
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">'
+      + '<div><div>'+formatBackupDate(row.snapshot_at)+'</div><div class="hint">حجم البيانات تقريبًا: '+row.approx_size+' حرف</div></div>'
+      + '<button class="btn ghost sm" data-restore-backup="'+row.id+'">استرجاع هذه النسخة</button>'
+      + '</div>';
+  }).join('');
+
+  wrap.querySelectorAll('[data-restore-backup]').forEach(function(btn){
+    btn.addEventListener('click', async function(){
+      const id = btn.getAttribute('data-restore-backup');
+      if(!confirm('متأكد إنك عايز ترجع البيانات لهذه النسخة؟ أي تعديلات حصلت بعد التاريخ ده هتضيع (وهيتم حفظ نسخة من الوضع الحالي أول ما ترجع، فتقدر تلغي القرار لو غلطت).')) return;
+      btn.disabled = true; btn.textContent = 'جارٍ الاسترجاع...';
+      const { error: restoreErr } = await sb.rpc('app_admin_restore_state_snapshot', { p_token: getSavedToken(), p_history_id: id });
+      if(restoreErr){ toast('تعذر الاسترجاع: '+restoreErr.message, 'error'); btn.disabled=false; btn.textContent='استرجاع هذه النسخة'; return; }
+      toast('تم استرجاع النسخة بنجاح، جارٍ إعادة تحميل البيانات...');
+      await syncStateFromSupabase();
+      renderCompanyBar(); renderModule();
+      closeModal();
+    });
+  });
+}
+
+/* ===================== إدارة المستخدمين ===================== */
+function openUsersModal(){
+  const cu = getCurrentUser();
+  if(!cu || cu.role!=='admin'){ toast('هذه الصفحة متاحة للمدير فقط','error'); return; }
+  renderUsersModal();
+}
+async function loadAllProfiles(){
+  const { data, error } = await sb.rpc('app_admin_list_users', { p_token: getSavedToken() });
+  if(error){
+    console.warn('تعذر تحميل قائمة المستخدمين', error);
+    toast('تعذر تحميل قائمة المستخدمين: '+error.message, 'error');
+    return [];
+  }
+  return data || [];
+}
+async function renderUsersModal(editingId){
+  const users = await loadAllProfiles();
+  const editing = editingId ? users.find(function(u){ return u.id===editingId; }) : null;
+  const cu = getCurrentUser();
+  const rows = users.map(function(u){
+    return '<tr>'
+      + '<td>'+escapeHtml(u.display_name||'')+'</td>'
+      + '<td class="mono">'+escapeHtml(u.username||'')+'</td>'
+      + '<td>'+(u.role==='admin'?'مدير':'مستخدم')+'</td>'
+      + '<td style="white-space:nowrap;">'
+      + '<button class="btn ghost sm" data-edit-user="'+u.id+'">تعديل</button> '
+      + (u.id===cu.id ? '' : '<button class="btn ghost sm" data-del-user="'+u.id+'">إلغاء الصلاحية</button>')
+      + '</td></tr>';
+  }).join('');
+  const formHtml = editing
+    ? ('<div class="field"><label>الاسم الظاهر</label><input id="userDisplayName" value="'+escapeHtml(editing.display_name||'')+'"></div>'
+      + '<div class="field"><label>الصلاحية</label><select id="userRole">'
+      + '<option value="user"'+(editing.role!=='admin'?' selected':'')+'>مستخدم</option>'
+      + '<option value="admin"'+(editing.role==='admin'?' selected':'')+'>مدير</option>'
+      + '</select></div>'
+      + '<hr style="margin:16px 0;border:none;border-top:1px solid var(--border);">'
+      + '<div class="field"><label>تعيين كلمة مرور جديدة (في حالة النسيان)</label>'
+      + '<div class="pw-field"><input id="userResetPassword" type="password" placeholder="6 حروف/أرقام على الأقل" autocomplete="new-password"><button type="button" class="pw-toggle" data-toggle-for="userResetPassword">👁</button></div>'
+      + '<button class="btn ghost sm" id="btnResetUserPassword" style="margin-top:8px;">تعيين كلمة المرور</button>'
+      + '<div class="hint">هيتم تغيير كلمة مرور المستخدم فورًا. محتاج تبلّغه بالكلمة الجديدة بنفسك (مفيش إيميل هيتبعت).</div>'
+      + '</div>')
+    : ('<div class="field"><label>الاسم الظاهر</label><input id="userDisplayName" placeholder="مثال: محمد أحمد"></div>'
+      + '<div class="field"><label>اسم المستخدم (للدخول)</label><input id="userUsername" placeholder="مثال: mohamed"></div>'
+      + '<div class="field"><label>كلمة المرور</label><div class="pw-field"><input id="userPassword" type="password" placeholder="كلمة مرور جديدة (6 حروف على الأقل)"><button type="button" class="pw-toggle" data-toggle-for="userPassword">👁</button></div></div>'
+      + '<div class="field"><label>الصلاحية</label><select id="userRole">'
+      + '<option value="user">مستخدم</option><option value="admin">مدير</option>'
+      + '</select></div>');
+  const html = '<div class="overlay" id="usersOverlay"><div class="modal wide">'
+    + '<div class="modal-head"><h3>إدارة المستخدمين</h3><button class="modal-close" id="btnCloseUsers">✕</button></div>'
+    + '<div class="modal-body">'
+    + '<div class="table-wrap"><table><thead><tr><th>الاسم</th><th>اسم المستخدم</th><th>الصلاحية</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+    + '<hr style="margin:20px 0;border:none;border-top:1px solid var(--border);">'
+    + '<h4 style="margin:0 0 12px;">'+(editing?'تعديل مستخدم':'إضافة مستخدم جديد')+'</h4>'
+    + formHtml
+    + '</div>'
+    + '<div class="modal-foot"><div>'+(editing?'<button class="btn ghost" id="btnCancelEditUser">إلغاء التعديل</button>':'')+'</div>'
+    + '<button class="btn primary" id="btnSaveUser">'+(editing?'حفظ التعديلات':'إضافة المستخدم')+'</button></div>'
+    + '</div></div>';
+  document.getElementById('modalHost').innerHTML = html;
+  document.querySelectorAll('#usersOverlay .pw-toggle').forEach(attachPasswordToggle);
+  document.getElementById('btnCloseUsers').addEventListener('click', closeModal);
+  document.getElementById('usersOverlay').addEventListener('click', function(ev){ if(ev.target.id==='usersOverlay') closeModal(); });
+  document.querySelectorAll('[data-edit-user]').forEach(function(btn){
+    btn.addEventListener('click', function(){ renderUsersModal(btn.dataset.editUser); });
+  });
+  document.querySelectorAll('[data-del-user]').forEach(function(btn){
+    btn.addEventListener('click', async function(){
+      const id = btn.dataset.delUser;
+      const target = users.find(function(u){ return u.id===id; });
+      if(!confirm('متأكد إنك عايز تلغي صلاحية "'+(target?target.display_name:'')+'"؟ (الحساب هيتحذف نهائيًا من البرنامج)')) return;
+      const { error } = await sb.rpc('app_admin_delete_user', { p_token: getSavedToken(), p_target_id: id });
+      if(error){ toast('تعذر إلغاء الصلاحية: '+error.message, 'error'); return; }
+      toast('تم إلغاء صلاحية المستخدم '+(target?target.display_name:''));
+      renderUsersModal();
+    });
+  });
+  const cancelBtn = document.getElementById('btnCancelEditUser');
+  if(cancelBtn) cancelBtn.addEventListener('click', function(){ renderUsersModal(); });
+  const btnResetUserPassword = document.getElementById('btnResetUserPassword');
+  if(btnResetUserPassword){
+    btnResetUserPassword.addEventListener('click', async function(){
+      const newPassword = document.getElementById('userResetPassword').value;
+      if(!newPassword || newPassword.length < 6){ toast('كلمة المرور لازم تكون 6 حروف/أرقام على الأقل','error'); return; }
+      if(!confirm('متأكد إنك عايز تغيّر كلمة مرور "'+editing.display_name+'"؟')) return;
+      btnResetUserPassword.disabled = true; btnResetUserPassword.textContent = 'جارٍ التنفيذ...';
+      try{
+        const { error } = await sb.rpc('app_admin_reset_password', { p_token: getSavedToken(), p_target_id: editing.id, p_new_password: newPassword });
+        if(error){ toast('تعذر تغيير كلمة المرور: '+error.message, 'error'); return; }
+        toast('تم تغيير كلمة مرور المستخدم بنجاح');
+        document.getElementById('userResetPassword').value = '';
+      }catch(e){
+        toast('تعذر الاتصال بخدمة تغيير كلمة المرور: '+e.message, 'error');
+      }finally{
+        btnResetUserPassword.disabled = false; btnResetUserPassword.textContent = 'تعيين كلمة المرور';
+      }
+    });
+  }
+  document.getElementById('btnSaveUser').addEventListener('click', async function(){
+    const role = document.getElementById('userRole').value;
+    if(editing){
+      const displayName = document.getElementById('userDisplayName').value.trim();
+      if(!displayName){ toast('برجاء إدخال الاسم','error'); return; }
+      const { error } = await sb.rpc('app_admin_update_user', { p_token: getSavedToken(), p_target_id: editing.id, p_display_name: displayName, p_role: role });
+      if(error){ toast('تعذر الحفظ: '+error.message, 'error'); return; }
+      if(editing.id===cu.id){
+        CURRENT_PROFILE.display_name = displayName;
+        CURRENT_PROFILE.role = role;
+        refreshCurrentUserLabel();
+      }
+      toast('تم تحديث بيانات المستخدم');
+      renderUsersModal();
+      return;
+    }
+    const displayName = document.getElementById('userDisplayName').value.trim();
+    const username = document.getElementById('userUsername').value.trim();
+    const password = document.getElementById('userPassword').value;
+    if(!displayName || !username){ toast('برجاء إدخال الاسم واسم المستخدم','error'); return; }
+    if(!password || password.length < 6){ toast('كلمة المرور لازم تكون 6 حروف/أرقام على الأقل','error'); return; }
+    const { error } = await sb.rpc('app_admin_create_user', { p_token: getSavedToken(), p_username: username, p_password: password, p_display_name: displayName, p_role: role });
+    if(error){ toast('تعذر إنشاء المستخدم: '+error.message, 'error'); return; }
+    toast('تمت إضافة المستخدم');
+    renderUsersModal();
+  });
+}
+
+/* ===================== إضافة شركة ===================== */
+function openAddCompanyModal(){
+  const html = '<div class="overlay" id="coOverlay"><div class="modal" style="max-width:400px">'
+    + '<div class="modal-head"><h3>إضافة شركة جديدة</h3><button class="modal-close" id="btnCloseCo">✕</button></div>'
+    + '<div class="modal-body"><div class="field"><label>اسم الشركة</label><input id="newCoName" placeholder="مثال: Fedo Pharma"></div></div>'
+    + '<div class="modal-foot"><div></div><button class="btn primary" id="btnSaveCo">إضافة</button></div>'
+    + '</div></div>';
+  document.getElementById('modalHost').innerHTML = html;
+  document.getElementById('btnCloseCo').addEventListener('click', closeModal);
+  document.getElementById('coOverlay').addEventListener('click', function(ev){ if(ev.target.id==='coOverlay') closeModal(); });
+  document.getElementById('btnSaveCo').addEventListener('click', function(){
+    const name = document.getElementById('newCoName').value.trim();
+    if(!name){ toast('اكتب اسم الشركة','error'); return; }
+    STATE.companies.push({id:uid('co'), name:name, color: COMPANY_COLORS[STATE.companies.length % COMPANY_COLORS.length], establishmentInsuranceNumber:'', insuranceOfficeName:''});
+    persistState(STATE);
+    closeModal(); renderCompanyBar(); renderModule();
+    toast('تمت إضافة الشركة');
+  });
+}
+function openEditCompanyModal(companyId){
+  const co = companyById(companyId);
+  if(!co) return;
+  const html = '<div class="overlay" id="coEditOverlay"><div class="modal" style="max-width:440px">'
+    + '<div class="modal-head"><h3>تأمينات المنشأة — '+escapeHtml(co.name)+'</h3><button class="modal-close" id="btnCloseCoEdit">✕</button></div>'
+    + '<div class="modal-body">'
+    + '<div class="field"><label>اسم الشركة</label><input id="editCoName" value="'+escapeHtml(co.name)+'"></div>'
+    + '<div class="field"><label>رقم المنشأة بالتأمينات الاجتماعية</label><input id="editCoEstNumber" value="'+escapeHtml(co.establishmentInsuranceNumber||'')+'" placeholder="مثال: 123456789"></div>'
+    + '<div class="field"><label>مكتب التأمينات التابعة له المنشأة</label><input id="editCoOffice" value="'+escapeHtml(co.insuranceOfficeName||'')+'" placeholder="مثال: مكتب تأمينات العجوزة"></div>'
+    + '</div>'
+    + '<div class="modal-foot"><div></div><button class="btn primary" id="btnSaveCoEdit">حفظ</button></div>'
+    + '</div></div>';
+  document.getElementById('modalHost').innerHTML = html;
+  document.getElementById('btnCloseCoEdit').addEventListener('click', closeModal);
+  document.getElementById('coEditOverlay').addEventListener('click', function(ev){ if(ev.target.id==='coEditOverlay') closeModal(); });
+  document.getElementById('btnSaveCoEdit').addEventListener('click', function(){
+    const name = document.getElementById('editCoName').value.trim();
+    if(!name){ toast('اكتب اسم الشركة','error'); return; }
+    co.name = name;
+    co.establishmentInsuranceNumber = document.getElementById('editCoEstNumber').value.trim();
+    co.insuranceOfficeName = document.getElementById('editCoOffice').value.trim();
+    persistState(STATE);
+    closeModal(); renderCompanyBar(); renderModule();
+    toast('تم حفظ بيانات المنشأة');
+  });
+}
+
+/* ===================== استيراد وتصدير Excel ===================== */
+function sanitizeSheetName(n){ return n.replace(/[\\/*?:\[\]]/g,'').slice(0,31); }
+function exportExcel(){
+  const wb = XLSX.utils.book_new();
+  companies().forEach(function(co){
+    const emps = employeesOf(co.id).slice().sort(function(a,b){ return (a.sr||0)-(b.sr||0); });
+    const aoa = [['S.R','Name','Job Designation','ID','Insurance number','Hire Date','Termination Date','Insured employee & Uninsured employee','Social Insurance Office Branch','Employment Contract','Insurance Contribution Period','Annual Leave Balance','Employee Documents','Note','Department','Division','Direct Manager','Phone','Address','Insurance Date','Contract End Date','Birth Date','Termination Reason','Salary','Probation Months']];
+    emps.forEach(function(e,i){
+      aoa.push([
+        e.sr || (i+1), e.name, e.jobTitle, e.nationalId, e.insuranceNumber,
+        e.hireDate||'', e.terminationDate||'',
+        e.insuranceEntity || (e.insured?'مؤمن':'غير مؤمن'),
+        e.officeBranch, e.contractType, calcContributionPeriod(e),
+        (e.leaveBalance===null||e.leaveBalance===undefined)?'':e.leaveBalance,
+        e.documents.length ? (e.documents.length+' مرفق') : '',
+        e.notes,
+        e.department||'', e.division||'', e.directManager||'', e.phone||'', e.address||'', e.insuranceDate||'', e.contractEndDate||'',
+        e.birthDate||'', e.terminationReason||'',
+        (e.salary===null||e.salary===undefined)?'':e.salary, (e.probationMonths===null||e.probationMonths===undefined)?'':e.probationMonths
+      ]);
+    });
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = [{wch:5},{wch:26},{wch:18},{wch:16},{wch:14},{wch:12},{wch:12},{wch:30},{wch:18},{wch:14},{wch:14},{wch:12},{wch:14},{wch:20},{wch:16},{wch:16},{wch:20},{wch:14},{wch:26},{wch:12},{wch:14},{wch:12},{wch:14},{wch:12},{wch:10}];
+    XLSX.utils.book_append_sheet(wb, ws, sanitizeSheetName(co.name));
+  });
+  XLSX.writeFile(wb, 'نظام_الموارد_البشرية_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  toast('تم تصدير الملف');
+}
+function parseExcelDate(v){
+  if(!v && v!==0) return null;
+  if(v instanceof Date) return v.toISOString().slice(0,10);
+  const s = String(v).trim();
+  if(!s) return null;
+  const d = new Date(s);
+  if(!isNaN(d.getTime())) return d.toISOString().slice(0,10);
+  return null;
+}
+function importExcelFile(file){
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    try{
+      const data = new Uint8Array(ev.target.result);
+      const wb = XLSX.read(data, {type:'array', cellDates:true});
+      let added = 0, updated = 0;
+      wb.SheetNames.forEach(function(sn){
+        const cname = sn.trim();
+        let co = STATE.companies.find(function(c){ return c.name===cname; });
+        if(!co){ co = {id:uid('co'), name:cname, color:COMPANY_COLORS[STATE.companies.length % COMPANY_COLORS.length], establishmentInsuranceNumber:'', insuranceOfficeName:''}; STATE.companies.push(co); }
+        const ws = wb.Sheets[sn];
+        const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+        for(let i=1;i<rows.length;i++){
+          const r = rows[i];
+          if(!r || !r[1]) continue;
+          const name = String(r[1]).trim();
+          if(!name) continue;
+          const nationalId = String(r[3]||'').trim();
+          const existing = STATE.employees.find(function(x){
+            return x.company===co.id && ((nationalId && x.nationalId===nationalId) || x.name===name);
+          });
+          const rec = existing || emptyEmployee();
+          rec.company = co.id;
+          rec.sr = r[0] || rec.sr;
+          rec.name = name;
+          rec.jobTitle = String(r[2]||rec.jobTitle||'');
+          rec.nationalId = nationalId || rec.nationalId;
+          rec.insuranceNumber = String(r[4]||rec.insuranceNumber||'');
+          rec.hireDate = parseExcelDate(r[5]) || rec.hireDate;
+          rec.terminationDate = parseExcelDate(r[6]) || rec.terminationDate;
+          const insTxt = String(r[7]||'');
+          if(insTxt){ rec.insuranceEntity = insTxt; rec.insured = insTxt.trim().indexOf('غير مؤمن')!==0; }
+          rec.officeBranch = String(r[8]||rec.officeBranch||'');
+          rec.contractType = String(r[9]||rec.contractType||'');
+          rec.contributionPeriod = String(r[10]||rec.contributionPeriod||'');
+          if(r[11]!==''&&r[11]!==undefined&&r[11]!==null) rec.leaveBalance = Number(r[11]);
+          if(r[13]) rec.notes = String(r[13]);
+          rec.department = String(r[14]||rec.department||'');
+          rec.division = String(r[15]||rec.division||'');
+          rec.directManager = String(r[16]||rec.directManager||'');
+          rec.phone = String(r[17]||rec.phone||'');
+          rec.address = String(r[18]||rec.address||'');
+          rec.insuranceDate = parseExcelDate(r[19]) || rec.insuranceDate;
+          rec.contractEndDate = parseExcelDate(r[20]) || rec.contractEndDate;
+          rec.birthDate = parseExcelDate(r[21]) || rec.birthDate;
+          if(r[22]) rec.terminationReason = String(r[22]);
+          if(r[23]!==undefined && r[23]!==null && r[23]!=='') rec.salary = Number(r[23]);
+          if(r[24]!==undefined && r[24]!==null && r[24]!=='') rec.probationMonths = Number(r[24]);
+          rec.updatedAt = new Date().toISOString();
+          if(existing){ updated++; }
+          else{
+            rec.id = uid('emp'); rec.createdAt = new Date().toISOString();
+            rec.documents = rec.documents||[]; rec.leaveLog = rec.leaveLog||[];
+            STATE.employees.push(rec); added++;
+          }
+        }
+      });
+      persistState(STATE);
+      renderCompanyBar(); renderModule();
+      toast('تم الاستيراد: '+added+' سجل جديد، '+updated+' سجل محدَّث');
+    }catch(err){
+      console.error(err);
+      toast('تعذرت قراءة الملف — تأكد من صيغة الشيت','error');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+/* ===================== تقارير الطباعة ===================== */
+function printDocumentHtml(bodyHtml, title){
+  return '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>'+escapeHtml(title)+'</title>'
+    + '<style>'
+    + 'body{font-family:Tajawal,Arial,sans-serif;padding:32px;color:#20241F;}'
+    + 'h1{font-size:20px;border-bottom:2px solid #0E4F49;padding-bottom:8px;margin-bottom:16px;}'
+    + 'table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px;}'
+    + 'th,td{border:1px solid #ccc;padding:6px 10px;text-align:right;}'
+    + 'th{background:#E1EFEC;}'
+    + '.meta{color:#666;font-size:12px;margin-bottom:20px;}'
+    + '.grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 24px;margin-bottom:18px;}'
+    + '.grid div b{display:block;font-size:11px;color:#666;font-weight:400;}'
+    + '.emp-block{margin-bottom:22px;padding-bottom:14px;border-bottom:1px dashed #ccc;}'
+    + '.emp-block:last-child{border-bottom:none;}'
+    + '.emp-block h1{font-size:15px;margin:0 0 8px;padding-bottom:6px;}'
+    + '.section-title{font-size:14px;margin:22px 0 8px;color:#0E4F49;}'
+    + '.summary-row{display:flex;gap:24px;margin-bottom:14px;flex-wrap:wrap;}'
+    + '.summary-row .item{font-size:12px;color:#666;}'
+    + '.summary-row .item b{display:block;font-size:18px;color:#20241F;font-family:inherit;}'
+    + '@media print{.emp-block{page-break-inside:avoid;}}'
+    + '</style></head><body>'+bodyHtml+'</body></html>';
+}
+function gridItem(label,value){ return '<div><b>'+escapeHtml(label)+'</b>'+escapeHtml(String(value===null||value===undefined||value===''?'—':value))+'</div>'; }
+function employeeProfilePrintHtml(e,co){
+  const status = empStatus(e)==='active' ? 'نشط' : 'منتهي الخدمة';
+  return '<h1>ملف الموظف — '+escapeHtml(e.name)+'</h1>'
+    + '<div class="meta">'+escapeHtml(co.name)+' • تم الإصدار بتاريخ '+new Date().toLocaleDateString('ar-EG')+'</div>'
+    + '<div class="grid">'
+    + gridItem('المسمى الوظيفي', e.jobTitle)
+    + gridItem('الحالة', status)
+    + gridItem('القسم', e.department)
+    + gridItem('الإدارة', e.division)
+    + gridItem('المدير المباشر', e.directManager)
+    + gridItem('الرقم القومي', e.nationalId)
+    + gridItem('رقم التليفون', e.phone)
+    + gridItem('تاريخ الميلاد', e.birthDate)
+    + gridItem('العمر', calcAge(e.birthDate))
+    + gridItem('تاريخ التعيين', e.hireDate)
+    + gridItem('تاريخ ترك الخدمة', e.terminationDate)
+    + gridItem('سبب ترك الخدمة', e.terminationReason)
+    + gridItem('تاريخ التأمين', e.insuranceDate)
+    + gridItem('حالة التأمين', e.insured?'مؤمَّن':'غير مؤمَّن')
+    + gridItem('جهة التأمين', e.insuranceEntity)
+    + gridItem('رقم التأمين', e.insuranceNumber)
+    + gridItem('فرع مكتب التأمينات', e.officeBranch)
+    + gridItem('نوع العقد', e.contractType)
+    + gridItem('تاريخ نهاية العقد', e.contractEndDate)
+    + gridItem('مدة الاشتراك', calcContributionPeriod(e))
+    + gridItem('رصيد الإجازة', (e.leaveBalance===null||e.leaveBalance===undefined)?'غير مسجل':e.leaveBalance+' يوم')
+    + gridItem('الراتب الحالي', (e.salary===null||e.salary===undefined||e.salary==='')?'غير مسجل':Number(e.salary).toLocaleString('ar-EG')+' جنيه')
+    + gridItem('فترة الاختبار', probationInfo(e) ? ('حتى '+probationInfo(e).endDate) : (e.probationMonths?'انتهت':'—'))
+    + gridItem('عدد المستندات المرفقة', e.documents.length)
+    + '</div>'
+    + (e.address ? '<div style="margin-bottom:8px"><b>العنوان:</b> '+escapeHtml(e.address)+'</div>' : '')
+    + (e.notes ? '<div><b>ملاحظات:</b> '+escapeHtml(e.notes)+'</div>' : '');
+}
+function printEmployeeProfile(id){
+  const e = STATE.employees.find(function(x){ return x.id===id; });
+  if(!e) return;
+  const co = companyById(e.company);
+  const w = window.open('', '_blank');
+  if(!w){ toast('المتصفح منع فتح نافذة الطباعة','error'); return; }
+  w.document.write(printDocumentHtml(employeeProfilePrintHtml(e,co), 'ملف الموظف - '+e.name));
+  w.document.close();
+  setTimeout(function(){ w.print(); }, 300);
+}
+function establishmentMetaHtml(co){
+  if(!co || (!co.establishmentInsuranceNumber && !co.insuranceOfficeName)) return '';
+  const parts = [];
+  if(co.establishmentInsuranceNumber) parts.push('رقم المنشأة بالتأمينات: '+escapeHtml(co.establishmentInsuranceNumber));
+  if(co.insuranceOfficeName) parts.push('مكتب التأمينات: '+escapeHtml(co.insuranceOfficeName));
+  return '<div class="meta">'+parts.join(' • ')+'</div>';
+}
+function printCompanyReport(companyId){
+  const co = companyById(companyId);
+  if(!co) return;
+  const emps = employeesOf(companyId).slice().sort(function(a,b){ return (a.sr||0)-(b.sr||0); });
+  const rows = emps.map(function(e){
+    return '<tr><td>'+(e.sr||'')+'</td><td>'+escapeHtml(e.name)+'</td><td>'+escapeHtml(e.jobTitle||'—')+'</td>'
+      + '<td>'+(empStatus(e)==='active'?'نشط':'منتهي')+'</td><td>'+(e.insured?'مؤمَّن':'غير مؤمَّن')+'</td>'
+      + '<td>'+((e.leaveBalance===null||e.leaveBalance===undefined)?'—':e.leaveBalance)+'</td></tr>';
+  }).join('');
+  const html = '<h1>تقرير الموظفين — '+escapeHtml(co.name)+'</h1>'
+    + '<div class="meta">'+emps.length+' موظف • تم الإصدار بتاريخ '+new Date().toLocaleDateString('ar-EG')+'</div>'
+    + establishmentMetaHtml(co)
+    + '<table><thead><tr><th>م</th><th>الاسم</th><th>الوظيفة</th><th>الحالة</th><th>التأمين</th><th>رصيد الإجازة</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  const w = window.open('', '_blank');
+  if(!w){ toast('المتصفح منع فتح نافذة الطباعة','error'); return; }
+  w.document.write(printDocumentHtml(html, 'تقرير - '+co.name));
+  w.document.close();
+  setTimeout(function(){ w.print(); }, 300);
+}
+function reportScopeName(companyId){
+  return companyId==='all' ? 'كل الشركات' : (companyById(companyId) ? companyById(companyId).name : '');
+}
+function openPrintWindow(html, title){
+  const w = window.open('', '_blank');
+  if(!w){ toast('المتصفح منع فتح نافذة الطباعة','error'); return; }
+  w.document.write(printDocumentHtml(html, title));
+  w.document.close();
+  setTimeout(function(){ w.print(); }, 300);
+}
+
+/* ===================== وحدة النماذج ===================== */
+function formsScope(){
+  return UI.activeCompany==='all' ? STATE.employees.slice() : employeesOf(UI.activeCompany);
+}
+const FORM_DEFS = [
+  ['jobHandover','نموذج استلام عمل','إقرار استلام العمل والمباشرة في الوظيفة'],
+  ['mobileLine','نموذج استلام خط موبايل','إقرار استلام خط تليفون محمول تابع للشركة'],
+  ['tools','نموذج استلام أدوات','إيصال استلام عهدة/أدوات من الشركة'],
+  ['leave','نموذج إجازة (HR-01-F26)','نموذج طلب إجازة/غياب رسمي معتمد'],
+  ['clearance','نموذج إخلاء طرف','شهادة إخلاء طرف عند ترك الخدمة'],
+  ['settlement','نموذج مخالصة','إقرار مخالصة نهائية عن كافة المستحقات المالية'],
+  ['resignation','نموذج استقالة','خطاب استقالة رسمي موجه لإدارة الشركة']
+];
+function viewForms(){
+  const scope = formsScope().slice().sort(function(a,b){ return String(a.name).localeCompare(String(b.name),'ar'); });
+  const showCo = UI.activeCompany==='all';
+  if(UI.formsEmployeeId && !scope.some(function(e){ return e.id===UI.formsEmployeeId; })) UI.formsEmployeeId = null;
+  const empOptions = '<option value="">— بدون بيانات (نموذج فارغ يُملأ يدويًا) —</option>' + scope.map(function(e){
+    const co = companyById(e.company);
+    return '<option value="'+e.id+'"'+(UI.formsEmployeeId===e.id?' selected':'')+'>'+escapeHtml(e.name)+(showCo&&co?' — '+escapeHtml(co.name):'')+'</option>';
+  }).join('');
+  if(!STATE.customForms || Array.isArray(STATE.customForms)) STATE.customForms = {};
+  const cards = FORM_DEFS.map(function(f){
+    const key = f[0];
+    const custom = STATE.customForms[key];
+    const body = custom
+      ? ('<div class="doc-row" style="padding:0 0 10px"><span class="fi">'+(custom.type==='application/pdf'?'PDF':'DOC')+'</span>'
+        + '<div class="meta"><div class="n">'+escapeHtml(custom.name)+'</div><div class="d">'+fmtDate(custom.uploadedAt)+' • '+fmtSize(custom.size)+'</div></div></div>'
+        + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
+        + '<button class="btn primary" data-form="'+key+'">تنزيل نموذجك</button>'
+        + '<button class="btn" data-form-revert="'+key+'">إزالة والعودة للنموذج الافتراضي</button>'
+        + '</div>')
+      : ('<button class="btn primary" data-form="'+key+'">تنزيل النموذج (Word)</button>'
+        + '<button class="btn" data-form-upload="'+key+'" style="margin-top:8px">استبدال بنموذج خاص بيك</button>');
+    return '<div class="panel form-card">'
+      + '<h3>'+f[1]+(custom?' <span class="badge ok" style="font-size:10px">نموذجك</span>':'')+'</h3>'
+      + '<p class="muted">'+f[2]+'</p>'
+      + body
+      + '</div>';
+  }).join('');
+  return '<div class="section-head"><div><h2>النماذج</h2><p>نماذج جاهزة بصيغة Word، أو استبدل أي نموذج بملفك الخاص</p></div></div>'
+    + '<div class="panel" style="margin-bottom:16px"><label style="display:block;font-size:12px;color:#666;margin-bottom:6px">اختر موظف لتعبئة النموذج تلقائيًا (اختياري)</label>'
+    + '<select id="formsEmployeeSelect" style="max-width:360px">'+empOptions+'</select></div>'
+    + '<div class="forms-grid">'+cards+'</div>';
+}
+function wordDocumentHtml(bodyHtml, title){
+  return '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">'
+    + '<head><meta charset="UTF-8"><title>'+escapeHtml(title)+'</title>'
+    + '<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->'
+    + '<style>'
+    + '@page{size:21cm 29.7cm;margin:2cm;}'
+    + 'body{font-family:Arial,Tahoma,sans-serif;font-size:14px;color:#000;direction:rtl;}'
+    + 'h1{font-size:18px;text-align:center;border-bottom:2px solid #0E4F49;padding-bottom:10px;margin-bottom:22px;}'
+    + 'table{width:100%;border-collapse:collapse;margin:14px 0;}'
+    + 'th,td{border:1px solid #666;padding:8px 10px;text-align:right;font-size:13px;}'
+    + 'th{background:#E1EFEC;}'
+    + 'p{line-height:2;margin:8px 0;}'
+    + '.hdr{display:flex;justify-content:space-between;font-size:12px;color:#333;margin-bottom:6px;}'
+    + '.sig-row{display:flex;justify-content:space-between;margin-top:60px;}'
+    + '.sig-row .sig{width:45%;text-align:center;}'
+    + '.sig-row .sig .line{border-top:1px solid #000;margin-top:40px;padding-top:6px;}'
+    + '.blank{display:inline-block;min-width:160px;border-bottom:1px dotted #333;}'
+    + '</style></head><body>'+bodyHtml+'</body></html>';
+}
+function downloadWordDoc(filename, bodyHtml, title){
+  const html = wordDocumentHtml(bodyHtml, title);
+  const blob = new Blob(['\ufeff', html], {type:'application/msword'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+}
+function fBlank(v){ return (v===null||v===undefined||v==='') ? '<span class="blank">&nbsp;</span>' : escapeHtml(String(v)); }
+function formTopDate(){
+  return '<p>القاهرة فى: '+new Date().toLocaleDateString('ar-EG')+'</p>';
+}
+function coName(co){ return co ? escapeHtml(co.name) : '<span class="blank">&nbsp;</span>'; }
+function formSignatureBlock(labels){
+  return '<div class="sig-row">'+labels.map(function(l){ return '<div class="sig"><div class="line">'+escapeHtml(l)+'</div></div>'; }).join('')+'</div>';
+}
+function generateFormDoc(key){
+  const custom = STATE.customForms && STATE.customForms[key];
+  if(custom){
+    const a = document.createElement('a');
+    a.href = custom.dataUrl; a.download = custom.name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    return;
+  }
+  const emp = UI.formsEmployeeId ? STATE.employees.find(function(x){ return x.id===UI.formsEmployeeId; }) : null;
+  const co = emp ? companyById(emp.company) : (UI.activeCompany!=='all' ? companyById(UI.activeCompany) : null);
+  const builders = {
+    jobHandover: buildJobHandoverForm,
+    mobileLine: buildMobileLineForm,
+    tools: buildToolsForm,
+    leave: buildLeaveForm,
+    clearance: buildClearanceForm,
+    settlement: buildSettlementForm,
+    resignation: buildResignationForm
+  };
+  const def = FORM_DEFS.find(function(f){ return f[0]===key; });
+  const fn = builders[key];
+  if(!fn || !def) return;
+  const body = fn(emp, co);
+  downloadWordDoc(def[1]+(emp?(' - '+emp.name):'')+'.doc', body, def[1]);
+}
+function buildJobHandoverForm(e, co){
+  return formTopDate()
+    + '<h1>إقـــــــرار إستـــــلام عمـــــل</h1>'
+    + '<p>أقر أنا / '+fBlank(e&&e.name)+'، رقم قومى '+fBlank(e&&e.nationalId)+' صادرة فى '+fBlank(null)+'</p>'
+    + '<p>إننى بدأت مهام عملى بشركة '+coName(co)+' فى وظيفـة / '+fBlank(e&&e.jobTitle)+' ومسؤول عن جميع العهد</p>'
+    + '<p>إعتباراً من يوم '+fBlank(null)+' الموافق '+fBlank(e&&e.hireDate)+'</p>'
+    + '<p>وهذا إقرار مني بذلك.</p>'
+    + '<p style="margin-top:30px">الاسم: '+fBlank(e&&e.name)+'</p>'
+    + '<p>التوقيع: '+fBlank(null)+'</p>'
+    + '<p>التاريخ: '+fBlank(null)+'</p>'
+    + '<p style="margin-top:20px">يعتمــــــــد ،،،</p>'
+    + '<p>'+fBlank(null)+'</p>';
+}
+function buildMobileLineForm(e, co){
+  return formTopDate()
+    + '<h1>أقـــــــــــرار</h1>'
+    + '<p>أقر أنا / '+fBlank(e&&e.name)+'، رقم قومى '+fBlank(e&&e.nationalId)+' منطقة ('+fBlank(null)+') بإستلام مشمول ما يلى:</p>'
+    + '<table><thead><tr><th>NO.</th><th>Description</th><th>Number</th></tr></thead><tbody>'
+    + '<tr><td>1</td><td>Vodafone Mobile Line</td><td>'+fBlank(null)+'</td></tr>'
+    + '</tbody></table>'
+    + '<p>من شركة '+coName(co)+' على أن أكون مسئول/ة مسئولية كاملة عن المكالمات التى تجرى بواسطة الخط طوال فترة تواجده معى وأتعهد بالحفاظ عليه وتسليمه لـشركة '+coName(co)+' فى حالة طلبها منى بحالة جيدة.</p>'
+    + '<p>وهذا أقرار منى بذلك،،،</p>'
+    + '<p style="margin-top:20px">المستلم: '+fBlank(e&&e.name)+'</p>'
+    + '<p>التوقيع: '+fBlank(null)+'</p>';
+}
+function buildToolsForm(e, co){
+  const rows = [1,2,3,4].map(function(){ return '<tr><td>'+fBlank(null)+'</td><td>'+fBlank(null)+'</td></tr>'; }).join('');
+  return formTopDate()
+    + '<h1>إيصـــال إستـــلام عهـــدة</h1>'
+    + '<p>أستلمت أنا / '+fBlank(e&&e.name)+'، رقم قومى '+fBlank(e&&e.nationalId)+'، الأدوات التالى بيانها:-</p>'
+    + '<table><thead><tr><th>Qty</th><th>Description</th></tr></thead><tbody>'+rows+'</tbody></table>'
+    + '<p>وأتعهد بالحفاظ عليها وتسليمها لــشــركــة '+coName(co)+' فى حالة طلبها منى بحالة جيدة.</p>'
+    + '<p>وهذا إقرار منى بذلك،،،،،،</p>'
+    + '<p style="margin-top:20px">المستلم / '+fBlank(e&&e.name)+'</p>'
+    + '<p>التوقيع/ '+fBlank(null)+'</p>';
+}
+function buildLeaveForm(e, co){
+  return '<div dir="ltr" style="text-align:left">'
+    + '<table><tbody>'
+    + '<tr><th style="width:35%">Name :</th><td>'+fBlank(e&&e.name)+'</td></tr>'
+    + '<tr><th>Department :</th><td>'+fBlank(e&&e.department)+'</td></tr>'
+    + '<tr><th>From : &nbsp;&nbsp;&nbsp; To :</th><td>'+fBlank(null)+'</td></tr>'
+    + '<tr><th>Total Of Working Day Of Absence :</th><td>'+fBlank(null)+'</td></tr>'
+    + '</tbody></table>'
+    + '<p><b>Reason of Absence:</b> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>Total of Days</b></p>'
+    + '<table><tbody>'
+    + '<tr><td>Vacation --------</td><td>'+fBlank(null)+'</td></tr>'
+    + '<tr><td>Sick Leave --------</td><td>'+fBlank(null)+'</td></tr>'
+    + '<tr><td>Annual Leave --------</td><td>'+fBlank((e&&(e.leaveBalance!==null&&e.leaveBalance!==undefined))?e.leaveBalance:null)+'</td></tr>'
+    + '<tr><td>Maternity Leave --------</td><td>'+fBlank(null)+'</td></tr>'
+    + '<tr><td>Compensation --------</td><td>'+fBlank(null)+'</td></tr>'
+    + '<tr><td>Others --------</td><td>'+fBlank(null)+'</td></tr>'
+    + '</tbody></table>'
+    + '<p style="margin-top:30px">Employee Signature: ______________ &nbsp;&nbsp;&nbsp; Date: __ / __ / '+new Date().getFullYear()+'</p>'
+    + '<p>Manager Signature: ______________</p>'
+    + '</div>';
+}
+function buildClearanceForm(e, co){
+  return formTopDate()
+    + '<p>إلـى مـن يـهـمـه الأمــر،،،</p>'
+    + '<h1>إخـــلاء طـــرف</h1>'
+    + '<p>تشهد إدارة شــركــة '+coName(co)+' بإخلاء طرف الأستاذ/ة '+fBlank(e&&e.name)+'</p>'
+    + '<p>من جميع إدارات الشركة وذلك إعتباراً من '+fBlank(e&&e.terminationDate)+'.</p>'
+    + '<p>وهذه شهادة منا بذلك،،،</p>'
+    + '<p style="margin-top:40px">إدارة الموارد البشرية</p>'
+    + '<p style="margin-top:20px">يعتمد</p>'
+    + '<p>'+fBlank(null)+'</p>';
+}
+function buildSettlementForm(e, co){
+  return formTopDate()
+    + '<p>السادة / شـركــة '+coName(co)+'</p>'
+    + '<h1>مــخـــالـــصــة</h1>'
+    + '<p>أقر أنا السيد/ة / '+fBlank(e&&e.name)+'، رقم قومى '+fBlank(e&&e.nationalId)+'، بأننى قد</p>'
+    + '<p>إستلمت كافة مستحقاتى المالية والعينية من شركة '+coName(co)+'.</p>'
+    + '<p>وأيضاً كافة أصول المستندات الخاصة بالتعيين.</p>'
+    + '<p>وهذا إقرار منى بذلك،،،،</p>'
+    + '<p style="margin-top:30px">التاريخ: '+fBlank(null)+'</p>'
+    + '<p>الأسم: '+fBlank(e&&e.name)+'</p>'
+    + '<p>التوقيع: '+fBlank(null)+'</p>';
+}
+function buildResignationForm(e, co){
+  return formTopDate()
+    + '<p>عـناية / مـديـر شـركــة '+coName(co)+'</p>'
+    + '<p>تحية طيبة وبعد ،،،،</p>'
+    + '<h1>إســتـقـالـة</h1>'
+    + '<p>مقدمه لسيادتكم الأستاذ/ة / '+fBlank(e&&e.name)+'، بطلب الموافقة على أستقالتى من العمل لدى شركة '+coName(co)+' وذلك إعتباراً من '+fBlank(null)+'، وذلك لظروف خاصة.</p>'
+    + '<p>وإذ أنني انتهز هذه الفرصة لكي أتقدم بالشكر لكل من ساهم وتعاون معي في إنجاح الأعمال الموكلة لي طوال فترة تواجدي داخل شركة '+coName(co)+'.</p>'
+    + '<p style="margin-top:30px">الأسم / '+fBlank(e&&e.name)+'</p>'
+    + '<p>التوقيع / '+fBlank(null)+'</p>';
+}
+function printAllDetailedReport(companyId, list){
+  if(!list.length){ toast('لا يوجد موظفون لعرضهم','error'); return; }
+  const scopeName = reportScopeName(companyId);
+  const blocks = list.map(function(e){
+    const co = companyById(e.company);
+    return '<div class="emp-block">'+employeeProfilePrintHtml(e,co)+'</div>';
+  }).join('');
+  const html = '<h1>تقرير تفصيلي لكل موظف — '+escapeHtml(scopeName)+'</h1>'
+    + '<div class="meta">'+list.length+' موظف • تم الإصدار بتاريخ '+new Date().toLocaleDateString('ar-EG')+'</div>'
+    + blocks;
+  openPrintWindow(html, 'تقرير تفصيلي - '+scopeName);
+}
+function printInsuranceStatusReport(companyId, list){
+  const scopeName = reportScopeName(companyId);
+  const showCo = companyId==='all';
+  const insuredList = list.filter(function(e){ return e.insured; });
+  const uninsuredList = list.filter(function(e){ return !e.insured; });
+  function rowsOf(arr, insCols){
+    return arr.map(function(e){
+      const co = companyById(e.company);
+      return '<tr><td>'+escapeHtml(e.name)+'</td>'
+        + (showCo ? '<td>'+escapeHtml(co?co.name:'')+'</td>' : '')
+        + '<td>'+(e.jobTitle?escapeHtml(e.jobTitle):'—')+'</td>'
+        + (insCols
+            ? '<td>'+(e.insuranceEntity?escapeHtml(e.insuranceEntity):'—')+'</td><td>'+(e.insuranceNumber?escapeHtml(e.insuranceNumber):'—')+'</td>'
+            : '<td>'+(e.contractType?escapeHtml(e.contractType):'—')+'</td>')
+        + '</tr>';
+    }).join('');
+  }
+  const headCols = '<th>الاسم</th>'+(showCo?'<th>الشركة</th>':'')+'<th>الوظيفة</th>';
+  const pct = list.length ? Math.round(insuredList.length/list.length*100) : 0;
+  const html = '<h1>تقرير حالة التأمين — '+escapeHtml(scopeName)+'</h1>'
+    + '<div class="meta">'+list.length+' موظف نشط • تم الإصدار بتاريخ '+new Date().toLocaleDateString('ar-EG')+'</div>'
+    + (companyId!=='all' ? establishmentMetaHtml(companyById(companyId)) : '')
+    + '<div class="summary-row">'
+    + '<div class="item"><b>'+insuredList.length+'</b>مؤمَّن عليهم</div>'
+    + '<div class="item"><b>'+uninsuredList.length+'</b>غير مؤمَّن عليهم</div>'
+    + '<div class="item"><b>'+pct+'%</b>نسبة التأمين</div>'
+    + '</div>'
+    + '<div class="section-title">المؤمَّن عليهم ('+insuredList.length+')</div>'
+    + '<table><thead><tr>'+headCols+'<th>جهة التأمين</th><th>رقم التأمين</th></tr></thead><tbody>'
+    + (rowsOf(insuredList,true) || '<tr><td colspan="'+(showCo?5:4)+'">لا يوجد</td></tr>') + '</tbody></table>'
+    + '<div class="section-title">غير المؤمَّن عليهم ('+uninsuredList.length+')</div>'
+    + '<table><thead><tr>'+headCols+'<th>نوع العقد</th></tr></thead><tbody>'
+    + (rowsOf(uninsuredList,false) || '<tr><td colspan="'+(showCo?4:3)+'">لا يوجد</td></tr>') + '</tbody></table>';
+  openPrintWindow(html, 'تقرير التأمين - '+scopeName);
+}
+function printTerminatedReport(companyId, list){
+  const scopeName = reportScopeName(companyId);
+  const showCo = companyId==='all';
+  const rows = list.map(function(e){
+    const co = companyById(e.company);
+    return '<tr><td>'+escapeHtml(e.name)+'</td>'
+      + (showCo ? '<td>'+escapeHtml(co?co.name:'')+'</td>' : '')
+      + '<td>'+(e.jobTitle?escapeHtml(e.jobTitle):'—')+'</td>'
+      + '<td>'+(e.hireDate?new Date(e.hireDate).toLocaleDateString('ar-EG'):'—')+'</td>'
+      + '<td>'+(e.terminationDate?new Date(e.terminationDate).toLocaleDateString('ar-EG'):'—')+'</td>'
+      + '<td>'+(calcServiceDuration(e)||'—')+'</td></tr>';
+  }).join('') || '<tr><td colspan="'+(showCo?6:5)+'">لا يوجد موظفون تركوا الخدمة</td></tr>';
+  const html = '<h1>تقرير من ترك الخدمة — '+escapeHtml(scopeName)+'</h1>'
+    + '<div class="meta">'+list.length+' موظف • تم الإصدار بتاريخ '+new Date().toLocaleDateString('ar-EG')+'</div>'
+    + '<table><thead><tr><th>الاسم</th>'+(showCo?'<th>الشركة</th>':'')+'<th>الوظيفة</th><th>تاريخ التعيين</th><th>تاريخ ترك الخدمة</th><th>مدة الخدمة</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  openPrintWindow(html, 'تقرير من ترك الخدمة - '+scopeName);
+}
+function printNewHiresReport(companyId, list, days){
+  const scopeName = reportScopeName(companyId);
+  const showCo = companyId==='all';
+  const rows = list.map(function(e){
+    const co = companyById(e.company);
+    return '<tr><td>'+escapeHtml(e.name)+'</td>'
+      + (showCo ? '<td>'+escapeHtml(co?co.name:'')+'</td>' : '')
+      + '<td>'+(e.jobTitle?escapeHtml(e.jobTitle):'—')+'</td>'
+      + '<td>'+(e.hireDate?new Date(e.hireDate).toLocaleDateString('ar-EG'):'—')+'</td>'
+      + '<td>'+(empStatus(e)==='active'?'نشط':'منتهي')+'</td></tr>';
+  }).join('') || '<tr><td colspan="'+(showCo?5:4)+'">لا يوجد موظفون جدد خلال هذه الفترة</td></tr>';
+  const html = '<h1>تقرير الموظفين الجدد (آخر '+days+' يوم) — '+escapeHtml(scopeName)+'</h1>'
+    + '<div class="meta">'+list.length+' موظف • تم الإصدار بتاريخ '+new Date().toLocaleDateString('ar-EG')+'</div>'
+    + '<table><thead><tr><th>الاسم</th>'+(showCo?'<th>الشركة</th>':'')+'<th>الوظيفة</th><th>تاريخ التعيين</th><th>الحالة</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  openPrintWindow(html, 'تقرير الموظفين الجدد - '+scopeName);
+}
+function printResignedReport(companyId, list){
+  const scopeName = reportScopeName(companyId);
+  const showCo = companyId==='all';
+  const rows = list.map(function(e){
+    const co = companyById(e.company);
+    return '<tr><td>'+escapeHtml(e.name)+'</td>'
+      + (showCo ? '<td>'+escapeHtml(co?co.name:'')+'</td>' : '')
+      + '<td>'+(e.jobTitle?escapeHtml(e.jobTitle):'—')+'</td>'
+      + '<td>'+(e.hireDate?new Date(e.hireDate).toLocaleDateString('ar-EG'):'—')+'</td>'
+      + '<td>'+(e.terminationDate?new Date(e.terminationDate).toLocaleDateString('ar-EG'):'—')+'</td>'
+      + '<td>'+(calcServiceDuration(e)||'—')+'</td></tr>';
+  }).join('') || '<tr><td colspan="'+(showCo?6:5)+'">لا يوجد موظفون مستقيلون</td></tr>';
+  const html = '<h1>تقرير من قدّم استقالة — '+escapeHtml(scopeName)+'</h1>'
+    + '<div class="meta">'+list.length+' موظف • تم الإصدار بتاريخ '+new Date().toLocaleDateString('ar-EG')+'</div>'
+    + '<table><thead><tr><th>الاسم</th>'+(showCo?'<th>الشركة</th>':'')+'<th>الوظيفة</th><th>تاريخ التعيين</th><th>تاريخ الاستقالة</th><th>مدة الخدمة</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  openPrintWindow(html, 'تقرير الاستقالات - '+scopeName);
+}
+function printRetirementReport(companyId, list, windowYears){
+  const scopeName = reportScopeName(companyId);
+  const showCo = companyId==='all';
+  const rows = list.map(function(e){
+    const co = companyById(e.company);
+    const rem = yearsMonthsToRetirement(e.birthDate);
+    const remText = rem.years===0 && rem.months===0 ? 'أقل من شهر' : ((rem.years?rem.years+(rem.years===1?' سنة':' سنوات'):'') + (rem.years&&rem.months?' و':'') + (rem.months?rem.months+(rem.months===1?' شهر':' أشهر'):''));
+    return '<tr><td>'+escapeHtml(e.name)+'</td>'
+      + (showCo ? '<td>'+escapeHtml(co?co.name:'')+'</td>' : '')
+      + '<td>'+(e.jobTitle?escapeHtml(e.jobTitle):'—')+'</td>'
+      + '<td>'+(e.birthDate?new Date(e.birthDate).toLocaleDateString('ar-EG'):'—')+'</td>'
+      + '<td>'+calcAge(e.birthDate)+'</td>'
+      + '<td>'+remText+'</td></tr>';
+  }).join('') || '<tr><td colspan="'+(showCo?6:5)+'">لا يوجد موظفون ضمن هذا النطاق</td></tr>';
+  const html = '<h1>تقرير القريبين من سن المعاش (خلال '+windowYears+' سنوات) — '+escapeHtml(scopeName)+'</h1>'
+    + '<div class="meta">'+list.length+' موظف • سن المعاش '+RETIREMENT_AGE+' سنة • تم الإصدار بتاريخ '+new Date().toLocaleDateString('ar-EG')+'</div>'
+    + '<table><thead><tr><th>الاسم</th>'+(showCo?'<th>الشركة</th>':'')+'<th>الوظيفة</th><th>تاريخ الميلاد</th><th>العمر</th><th>المتبقي لسن المعاش</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  openPrintWindow(html, 'تقرير سن المعاش - '+scopeName);
+}
+function printLeaveBalanceReport(companyId, list){
+  const scopeName = reportScopeName(companyId);
+  const showCo = companyId==='all';
+  const withBal = list.filter(function(e){ return e.leaveBalance!==null && e.leaveBalance!==undefined; });
+  const total = withBal.reduce(function(s,e){ return s+e.leaveBalance; }, 0);
+  const avg = withBal.length ? Math.round(total/withBal.length*10)/10 : 0;
+  const rows = list.map(function(e){
+    const co = companyById(e.company);
+    const bal = (e.leaveBalance===null||e.leaveBalance===undefined) ? 'غير مسجل' : e.leaveBalance+' يوم';
+    return '<tr><td>'+escapeHtml(e.name)+'</td>'
+      + (showCo ? '<td>'+escapeHtml(co?co.name:'')+'</td>' : '')
+      + '<td>'+(empStatus(e)==='active'?'نشط':'منتهي')+'</td>'
+      + '<td>'+bal+'</td></tr>';
+  }).join('') || '<tr><td colspan="'+(showCo?4:3)+'">لا يوجد موظفون</td></tr>';
+  const html = '<h1>تقرير رصيد الإجازات — '+escapeHtml(scopeName)+'</h1>'
+    + '<div class="meta">'+list.length+' موظف • تم الإصدار بتاريخ '+new Date().toLocaleDateString('ar-EG')+'</div>'
+    + '<div class="summary-row">'
+    + '<div class="item"><b>'+total+'</b>إجمالي أيام الرصيد</div>'
+    + '<div class="item"><b>'+avg+'</b>متوسط الرصيد</div>'
+    + '<div class="item"><b>'+(list.length-withBal.length)+'</b>بدون رصيد مسجل</div>'
+    + '</div>'
+    + '<table><thead><tr><th>الاسم</th>'+(showCo?'<th>الشركة</th>':'')+'<th>الحالة</th><th>رصيد الإجازة</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  openPrintWindow(html, 'تقرير رصيد الإجازات - '+scopeName);
+}
+
+/* ===================== التهيئة ===================== */
+function init(){
+  document.querySelectorAll('.mod-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      UI.module = btn.dataset.module; UI.search='';
+      renderCompanyBar(); renderModule();
+    });
+  });
+  document.getElementById('btnImportExcel').addEventListener('click', function(){ document.getElementById('fileImport').click(); });
+  document.getElementById('fileImport').addEventListener('change', function(ev){
+    const f = ev.target.files[0];
+    if(f) importExcelFile(f);
+    ev.target.value = '';
+  });
+  document.getElementById('btnExportExcel').addEventListener('click', exportExcel);
+  document.getElementById('btnAddEmployee').addEventListener('click', function(){ openEmployeeModal(null,'basic'); });
+  const btnLogout = document.getElementById('btnLogout');
+  if(btnLogout && !btnLogout.dataset.bound){
+    btnLogout.dataset.bound = '1';
+    btnLogout.addEventListener('click', async function(){
+      const token = getSavedToken();
+      if(sb && token){ try{ await sb.rpc('app_logout', { p_token: token }); }catch(e){} }
+      saveToken(null);
+      CURRENT_PROFILE = null;
+      showLogin();
+    });
+  }
+  const btnChangeMyPassword = document.getElementById('btnChangeMyPassword');
+  if(btnChangeMyPassword && !btnChangeMyPassword.dataset.bound){
+    btnChangeMyPassword.dataset.bound = '1';
+    btnChangeMyPassword.addEventListener('click', openChangeMyPasswordModal);
+  }
+  const btnStateBackups = document.getElementById('btnStateBackups');
+  if(btnStateBackups && !btnStateBackups.dataset.bound){
+    btnStateBackups.dataset.bound = '1';
+    btnStateBackups.addEventListener('click', openStateBackupsModal);
+  }
+  const btnManageUsers = document.getElementById('btnManageUsers');
+  if(btnManageUsers && !btnManageUsers.dataset.bound){
+    btnManageUsers.dataset.bound = '1';
+    btnManageUsers.addEventListener('click', openUsersModal);
+  }
+  document.getElementById('fileDocUpload').addEventListener('change', async function(ev){
+    const file = ev.target.files[0];
+    if(!file || !pendingDocEmployee){ ev.target.value=''; return; }
+    if(file.size > 10*1024*1024){ toast('حجم الملف أكبر من 10 ميجابايت — برجاء ملف أصغر','error'); ev.target.value=''; return; }
+    const empId = pendingDocEmployee;
+    const real = STATE.employees.find(function(x){ return x.id===empId; });
+    if(!real){ ev.target.value=''; return; }
+    ev.target.value = '';
+    const docId = uid('doc');
+    if(sb){
+      toast('جاري رفع المستند...');
+      try{
+        const path = empId+'/'+docId+'_'+file.name.replace(/[^\w.\-]+/g,'_');
+        const { error: upErr } = await sb.storage.from(DOCS_BUCKET).upload(path, file, { upsert:true, contentType:file.type||undefined });
+        if(upErr) throw upErr;
+        const { data:pub } = sb.storage.from(DOCS_BUCKET).getPublicUrl(path);
+        real.documents.push({id:docId, name:file.name, type:file.type, size:file.size, path:path, url:pub.publicUrl, uploadedAt:new Date().toISOString()});
+        real.updatedAt = new Date().toISOString();
+        persistState(STATE);
+        if(UI.editingId===empId) renderEmployeeModal();
+        toast('تم رفع المستند');
+      }catch(err){
+        console.warn('فشل الرفع للتخزين السحابي', err);
+        toast('تعذر رفع الملف للتخزين السحابي — تحقق من إعداد الـ bucket في Supabase', 'error');
+      }
+      return;
+    }
+    /* لا يوجد اتصال بالتخزين السحابي — نرجع للأسلوب المحلي القديم كحل احتياطي */
+    const reader = new FileReader();
+    reader.onload = function(){
+      real.documents.push({id:docId, name:file.name, type:file.type, size:file.size, dataUrl:reader.result, uploadedAt:new Date().toISOString()});
+      real.updatedAt = new Date().toISOString();
+      persistState(STATE);
+      if(UI.editingId===empId) renderEmployeeModal();
+      toast('تم رفع المستند (تخزين محلي — لا يوجد اتصال سحابي)');
+    };
+    reader.readAsDataURL(file);
+  });
+  document.getElementById('fileCustomFormUpload').addEventListener('change', function(ev){
+    const file = ev.target.files[0];
+    if(!file || !pendingCustomFormKey){ ev.target.value=''; return; }
+    if(file.size > 5*1024*1024){ toast('حجم الملف أكبر من 5 ميجابايت — برجاء ملف أصغر','error'); ev.target.value=''; return; }
+    const reader = new FileReader();
+    reader.onload = function(){
+      if(!STATE.customForms || Array.isArray(STATE.customForms)) STATE.customForms = {};
+      STATE.customForms[pendingCustomFormKey] = {name:file.name, type:file.type, size:file.size, dataUrl:reader.result, uploadedAt:new Date().toISOString()};
+      persistState(STATE);
+      renderModule();
+      toast('تم استبدال النموذج بملفك');
+      ev.target.value = '';
+      pendingCustomFormKey = null;
+    };
+    reader.readAsDataURL(file);
+  });
+  document.addEventListener('keydown', function(ev){
+    if(ev.key==='Escape'){
+      const mh = document.getElementById('modalHost');
+      if(mh && mh.innerHTML.trim()) closeModal();
+    }
+  });
+  UI.module = 'dashboard';
+  renderCompanyBar();
+  renderModule();
+}
+document.addEventListener('DOMContentLoaded', setupAuth);
+
+</script>
+</body>
+</html>
