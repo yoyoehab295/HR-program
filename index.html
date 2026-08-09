@@ -511,7 +511,7 @@ async function sbPushRow(id, value){
     if(error) throw error;
   }catch(e){
     console.warn('تعذر رفع آخر تعديل إلى Supabase', e);
-    toast('⚠️ تعذر حفظ آخر تعديل على الخادم المشترك — لا تقفل الصفحة، تحقق من الإنترنت وحاول مرة أخرى', 'error');
+    toast('⚠️ تعذر حفظ آخر تعديل على الخادم المشترك: '+(e && e.message ? e.message : 'خطأ غير معروف')+' — لا تقفل الصفحة وحاول تاني', 'error');
   }finally{
     PENDING_SYNC_COUNT--;
   }
