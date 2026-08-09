@@ -2026,7 +2026,11 @@ function openUsersModal(){
 }
 async function loadAllProfiles(){
   const { data, error } = await sb.rpc('app_admin_list_users', { p_token: getSavedToken() });
-  if(error){ console.warn('تعذر تحميل قائمة المستخدمين', error); return []; }
+  if(error){
+    console.warn('تعذر تحميل قائمة المستخدمين', error);
+    toast('تعذر تحميل قائمة المستخدمين: '+error.message, 'error');
+    return [];
+  }
   return data || [];
 }
 async function renderUsersModal(editingId){
