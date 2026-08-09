@@ -479,8 +479,8 @@ const STORAGE_KEY = 'hris_data_v1';
    2) نفّذ كود SQL الموجود في ملف supabase-setup.sql (المرفق) داخل SQL Editor بمشروعك
    3) من Project Settings > API انسخ القيمتين تحت وحطهم مكان القيم الحالية
 */
-const SUPABASE_URL = 'https://ctmfycptpbifywzefuxz.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN0bWZ5Y3B0cGJpZnl3emVmdXh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0MDc2MTgsImV4cCI6MjEwMDk4MzYxOH0.ZJ23ArvohOwa7Zk-iA6VAjuNDcBD6L82NtUakUOt3C0';
+const SUPABASE_URL = 'https://nzvlwvkypkhmqhnfdcrh.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im56dmx3dmt5cGtobXFobmZkY3JoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3NTY5MTYsImV4cCI6MjEwMTMzMjkxNn0.Ra5os6bqEhLPV1zmGqLMGQKFAa43OF8JavHtmThlwZk';
 const SUPABASE_READY = SUPABASE_URL.indexOf('YOUR_SUPABASE') === -1 && SUPABASE_ANON_KEY.indexOf('YOUR_SUPABASE') === -1;
 const DOCS_BUCKET = 'employee-documents';
 const sb = SUPABASE_READY ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
