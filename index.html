@@ -461,6 +461,7 @@ td.num,th.num{font-family:var(--font-mono);direction:ltr;text-align:left;}
 
 <input type="file" id="fileImport" accept=".xlsx,.xls" style="display:none">
 <input type="file" id="fileDocUpload" accept=".pdf,.png,.jpg,.jpeg" style="display:none">
+<input type="file" id="fileCoDocUpload" accept=".pdf,.png,.jpg,.jpeg" style="display:none">
 <input type="file" id="fileCustomFormUpload" accept=".doc,.docx,.pdf" style="display:none">
 
 <div id="modalHost"></div>
@@ -982,6 +983,7 @@ const RETIREMENT_AGE = 60;
 let newEmployeeDraft = null;
 let modalSnapshot = null;
 let pendingDocEmployee = null;
+let pendingCoDocSlot = null;
 let pendingCustomFormKey = null;
 
 /* ===================== منطق البيانات ===================== */
@@ -1259,15 +1261,19 @@ function establishmentInsuranceHtml(){
       + '<div class="grid" style="margin-top:4px">'
       + gridItem('رقم المنشأة بالتأمينات الاجتماعية', co.establishmentInsuranceNumber)
       + gridItem('مكتب التأمينات', co.insuranceOfficeName)
+      + gridItem('رقم السجل التجاري', co.commercialRegister)
+      + gridItem('الرقم الضريبي (البطاقة الضريبية)', co.taxCard)
       + '</div></div>';
   }
   const rows = companies().map(function(c){
     return '<tr><td><div class="name-cell"><span class="dot" style="background:'+c.color+';width:8px;height:8px;border-radius:50%"></span>'+escapeHtml(c.name)+'</div></td>'
       + '<td class="mono">'+(c.establishmentInsuranceNumber?escapeHtml(c.establishmentInsuranceNumber):'<span class="empty-note">—</span>')+'</td>'
-      + '<td>'+(c.insuranceOfficeName?escapeHtml(c.insuranceOfficeName):'<span class="empty-note">—</span>')+'</td></tr>';
-  }).join('') || '<tr><td colspan="3" class="empty-note">لا يوجد شركات</td></tr>';
+      + '<td>'+(c.insuranceOfficeName?escapeHtml(c.insuranceOfficeName):'<span class="empty-note">—</span>')+'</td>'
+      + '<td class="mono">'+(c.commercialRegister?escapeHtml(c.commercialRegister):'<span class="empty-note">—</span>')+'</td>'
+      + '<td class="mono">'+(c.taxCard?escapeHtml(c.taxCard):'<span class="empty-note">—</span>')+'</td></tr>';
+  }).join('') || '<tr><td colspan="5" class="empty-note">لا يوجد شركات</td></tr>';
   return '<div class="panel" style="margin-bottom:16px"><h3>بيانات تأمينات المنشآت</h3>'
-    + '<div class="table-wrap" style="margin-top:8px"><table><thead><tr><th>الشركة</th><th>رقم المنشأة بالتأمينات</th><th>مكتب التأمينات</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+    + '<div class="table-wrap" style="margin-top:8px"><table><thead><tr><th>الشركة</th><th>رقم المنشأة بالتأمينات</th><th>مكتب التأمينات</th><th>السجل التجاري</th><th>البطاقة الضريبية</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
 }
 
 /* ===================== الإجازات والمستندات ===================== */
@@ -2144,6 +2150,16 @@ async function renderUsersModal(editingId){
 }
 
 /* ===================== إضافة شركة ===================== */
+function coDocRowHtml(co, slot, label){
+  const d = co[slot];
+  if(d){
+    return '<div class="doc-row" style="margin-top:6px"><span class="fi">'+(d.type==='application/pdf'?'PDF':'IMG')+'</span>'
+      + '<div class="meta"><div class="n">'+escapeHtml(d.name)+'</div><div class="d">'+fmtDate(d.uploadedAt)+' • '+fmtSize(d.size)+'</div></div>'
+      + '<button class="icon-btn" data-co-doc-view="'+slot+'" title="عرض">↗</button>'
+      + '<button class="icon-btn" data-co-doc-del="'+slot+'" title="حذف">✕</button></div>';
+  }
+  return '<button type="button" class="btn ghost sm" data-co-doc-upload="'+slot+'" style="margin-top:6px">📎 رفع '+escapeHtml(label)+'</button>';
+}
 function openAddCompanyModal(){
   const html = '<div class="overlay" id="coOverlay"><div class="modal" style="max-width:400px">'
     + '<div class="modal-head"><h3>إضافة شركة جديدة</h3><button class="modal-close" id="btnCloseCo">✕</button></div>'
@@ -2156,7 +2172,7 @@ function openAddCompanyModal(){
   document.getElementById('btnSaveCo').addEventListener('click', function(){
     const name = document.getElementById('newCoName').value.trim();
     if(!name){ toast('اكتب اسم الشركة','error'); return; }
-    STATE.companies.push({id:uid('co'), name:name, color: COMPANY_COLORS[STATE.companies.length % COMPANY_COLORS.length], establishmentInsuranceNumber:'', insuranceOfficeName:''});
+    STATE.companies.push({id:uid('co'), name:name, color: COMPANY_COLORS[STATE.companies.length % COMPANY_COLORS.length], establishmentInsuranceNumber:'', insuranceOfficeName:'', commercialRegister:'', taxCard:''});
     persistState(STATE);
     closeModal(); renderCompanyBar(); renderModule();
     toast('تمت إضافة الشركة');
@@ -2171,18 +2187,50 @@ function openEditCompanyModal(companyId){
     + '<div class="field"><label>اسم الشركة</label><input id="editCoName" value="'+escapeHtml(co.name)+'"></div>'
     + '<div class="field"><label>رقم المنشأة بالتأمينات الاجتماعية</label><input id="editCoEstNumber" value="'+escapeHtml(co.establishmentInsuranceNumber||'')+'" placeholder="مثال: 123456789"></div>'
     + '<div class="field"><label>مكتب التأمينات التابعة له المنشأة</label><input id="editCoOffice" value="'+escapeHtml(co.insuranceOfficeName||'')+'" placeholder="مثال: مكتب تأمينات العجوزة"></div>'
+    + '<div class="field"><label>رقم السجل التجاري</label><input id="editCoCommercialRegister" value="'+escapeHtml(co.commercialRegister||'')+'" placeholder="مثال: 123456">'
+    + coDocRowHtml(co, 'commercialRegisterDoc', 'صورة السجل التجاري')
+    + '</div>'
+    + '<div class="field"><label>الرقم الضريبي (البطاقة الضريبية)</label><input id="editCoTaxCard" value="'+escapeHtml(co.taxCard||'')+'" placeholder="مثال: 123-456-789">'
+    + coDocRowHtml(co, 'taxCardDoc', 'صورة البطاقة الضريبية')
+    + '</div>'
     + '</div>'
     + '<div class="modal-foot"><div></div><button class="btn primary" id="btnSaveCoEdit">حفظ</button></div>'
     + '</div></div>';
   document.getElementById('modalHost').innerHTML = html;
   document.getElementById('btnCloseCoEdit').addEventListener('click', closeModal);
   document.getElementById('coEditOverlay').addEventListener('click', function(ev){ if(ev.target.id==='coEditOverlay') closeModal(); });
+  document.querySelectorAll('[data-co-doc-upload]').forEach(function(b){
+    b.addEventListener('click', function(){
+      pendingCoDocSlot = { coId: co.id, slot: b.dataset.coDocUpload };
+      document.getElementById('fileCoDocUpload').click();
+    });
+  });
+  document.querySelectorAll('[data-co-doc-del]').forEach(function(b){
+    b.addEventListener('click', function(){
+      const slot = b.dataset.coDocDel;
+      const d = co[slot];
+      co[slot] = null;
+      persistState(STATE);
+      if(d && d.path && sb){
+        sb.storage.from(DOCS_BUCKET).remove([d.path]).catch(function(err){ console.warn('تعذر حذف الملف من التخزين السحابي', err); });
+      }
+      openEditCompanyModal(co.id);
+    });
+  });
+  document.querySelectorAll('[data-co-doc-view]').forEach(function(b){
+    b.addEventListener('click', function(){
+      const d = co[b.dataset.coDocView];
+      if(d) window.open(d.url || d.dataUrl, '_blank');
+    });
+  });
   document.getElementById('btnSaveCoEdit').addEventListener('click', function(){
     const name = document.getElementById('editCoName').value.trim();
     if(!name){ toast('اكتب اسم الشركة','error'); return; }
     co.name = name;
     co.establishmentInsuranceNumber = document.getElementById('editCoEstNumber').value.trim();
     co.insuranceOfficeName = document.getElementById('editCoOffice').value.trim();
+    co.commercialRegister = document.getElementById('editCoCommercialRegister').value.trim();
+    co.taxCard = document.getElementById('editCoTaxCard').value.trim();
     persistState(STATE);
     closeModal(); renderCompanyBar(); renderModule();
     toast('تم حفظ بيانات المنشأة');
@@ -2777,6 +2825,41 @@ function init(){
     btnManageUsers.dataset.bound = '1';
     btnManageUsers.addEventListener('click', openUsersModal);
   }
+  document.getElementById('fileCoDocUpload').addEventListener('change', async function(ev){
+    const file = ev.target.files[0];
+    if(!file || !pendingCoDocSlot){ ev.target.value=''; return; }
+    if(file.size > 10*1024*1024){ toast('حجم الملف أكبر من 10 ميجابايت — برجاء ملف أصغر','error'); ev.target.value=''; return; }
+    const { coId, slot } = pendingCoDocSlot;
+    const co = companyById(coId);
+    if(!co){ ev.target.value=''; return; }
+    ev.target.value = '';
+    const docId = uid('codoc');
+    if(sb){
+      toast('جاري رفع الملف...');
+      try{
+        const path = 'companies/'+coId+'/'+slot+'_'+docId+'_'+file.name.replace(/[^\w.\-]+/g,'_');
+        const { error: upErr } = await sb.storage.from(DOCS_BUCKET).upload(path, file, { upsert:true, contentType:file.type||undefined });
+        if(upErr) throw upErr;
+        const { data:pub } = sb.storage.from(DOCS_BUCKET).getPublicUrl(path);
+        co[slot] = {id:docId, name:file.name, type:file.type, size:file.size, path:path, url:pub.publicUrl, uploadedAt:new Date().toISOString()};
+        persistState(STATE);
+        openEditCompanyModal(coId);
+        toast('تم رفع الملف');
+      }catch(err){
+        console.warn('فشل الرفع للتخزين السحابي', err);
+        toast('تعذر رفع الملف للتخزين السحابي — تحقق من إعداد الـ bucket في Supabase', 'error');
+      }
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(){
+      co[slot] = {id:docId, name:file.name, type:file.type, size:file.size, dataUrl:reader.result, uploadedAt:new Date().toISOString()};
+      persistState(STATE);
+      openEditCompanyModal(coId);
+      toast('تم رفع الملف (تخزين محلي — لا يوجد اتصال سحابي)');
+    };
+    reader.readAsDataURL(file);
+  });
   document.getElementById('fileDocUpload').addEventListener('change', async function(ev){
     const file = ev.target.files[0];
     if(!file || !pendingDocEmployee){ ev.target.value=''; return; }
