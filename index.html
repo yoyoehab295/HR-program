@@ -2172,7 +2172,7 @@ function openAddCompanyModal(){
   document.getElementById('btnSaveCo').addEventListener('click', function(){
     const name = document.getElementById('newCoName').value.trim();
     if(!name){ toast('اكتب اسم الشركة','error'); return; }
-    STATE.companies.push({id:uid('co'), name:name, color: COMPANY_COLORS[STATE.companies.length % COMPANY_COLORS.length], establishmentInsuranceNumber:'', insuranceOfficeName:'', commercialRegister:'', taxCard:''});
+    STATE.companies.push({id:uid('co'), name:name, color: COMPANY_COLORS[STATE.companies.length % COMPANY_COLORS.length], establishmentInsuranceNumber:'', insuranceOfficeName:'', commercialRegister:'', taxCard:'', establishmentInsuranceDoc:null});
     persistState(STATE);
     closeModal(); renderCompanyBar(); renderModule();
     toast('تمت إضافة الشركة');
@@ -2185,7 +2185,9 @@ function openEditCompanyModal(companyId){
     + '<div class="modal-head"><h3>تأمينات المنشأة — '+escapeHtml(co.name)+'</h3><button class="modal-close" id="btnCloseCoEdit">✕</button></div>'
     + '<div class="modal-body">'
     + '<div class="field"><label>اسم الشركة</label><input id="editCoName" value="'+escapeHtml(co.name)+'"></div>'
-    + '<div class="field"><label>رقم المنشأة بالتأمينات الاجتماعية</label><input id="editCoEstNumber" value="'+escapeHtml(co.establishmentInsuranceNumber||'')+'" placeholder="مثال: 123456789"></div>'
+    + '<div class="field"><label>رقم المنشأة بالتأمينات الاجتماعية</label><input id="editCoEstNumber" value="'+escapeHtml(co.establishmentInsuranceNumber||'')+'" placeholder="مثال: 123456789">'
+    + coDocRowHtml(co, 'establishmentInsuranceDoc', 'استمارة المنشأة بالتأمينات')
+    + '</div>'
     + '<div class="field"><label>مكتب التأمينات التابعة له المنشأة</label><input id="editCoOffice" value="'+escapeHtml(co.insuranceOfficeName||'')+'" placeholder="مثال: مكتب تأمينات العجوزة"></div>'
     + '<div class="field"><label>رقم السجل التجاري</label><input id="editCoCommercialRegister" value="'+escapeHtml(co.commercialRegister||'')+'" placeholder="مثال: 123456">'
     + coDocRowHtml(co, 'commercialRegisterDoc', 'صورة السجل التجاري')
