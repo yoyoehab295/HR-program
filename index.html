@@ -333,6 +333,13 @@ td.num,th.num{font-family:var(--font-mono);direction:ltr;text-align:left;}
 }
 .upload-drop:hover{border-color:var(--accent);color:var(--accent);}
 
+.checklist{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
+.checklist-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);flex-wrap:wrap;}
+.checklist-row .cl-label{font-size:13px;font-weight:600;}
+.checklist-row .cl-opts{display:flex;gap:16px;}
+.checklist-row .cl-opts label{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-soft);cursor:pointer;}
+.checklist-row .cl-opts input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--brand);}
+
 .leave-log{display:flex;flex-direction:column;gap:6px;max-height:160px;overflow-y:auto;margin-top:10px;}
 .leave-log .row{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-soft);padding:6px 0;border-bottom:1px solid var(--border);}
 .leave-adjust{display:flex;gap:8px;align-items:center;margin-top:10px;}
@@ -472,7 +479,7 @@ td.num,th.num{font-family:var(--font-mono);direction:ltr;text-align:left;}
 const SEED_DATA_RAW = {"Biotech Pharma":[{"sr":1,"name":"محمد السيد محمد متولى","jobTitle":"","nationalId":"28101261200658","insuranceNumber":"58641546","hireDate":"2005-01-08","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":2,"name":"اسماء مختار على مصطفى","jobTitle":"","nationalId":"28610130102385","insuranceNumber":"12849462","hireDate":"2009-08-01","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":3,"name":"اسلام ربيع عبد المنعم محمود","jobTitle":"","nationalId":"28909292300135","insuranceNumber":"69266359","hireDate":"2014-08-01","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":4,"name":"سليمان رضوان سليمان أحمد","jobTitle":"","nationalId":"29105102100676","insuranceNumber":"71320501","hireDate":"2014-12-01","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":5,"name":"محمد البسمى عبد المجيد عبدالله","jobTitle":"","nationalId":"26503050103234","insuranceNumber":"45564947","hireDate":"2015-07-06","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":6,"name":"ايهاب محمد أحمد يونس","jobTitle":"","nationalId":"28112090102352","insuranceNumber":"60138218","hireDate":"2016-01-09","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":7,"name":"محمد أبراهيم احمد حسين","jobTitle":"","nationalId":"28003102800171","insuranceNumber":"55873333","hireDate":"2016-01-12","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":8,"name":"محمد عصام  محمد شعبان","jobTitle":"","nationalId":"28905102101039","insuranceNumber":"25725101","hireDate":"2017-06-01","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما  مصر الجديدة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":9,"name":"ابراهيم احمد عبدالحميد (اسكندرية.)","jobTitle":"","nationalId":"28909170200652","insuranceNumber":"61877135","hireDate":"2018-04-22","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":10,"name":"حسنى توفيق عبده","jobTitle":"","nationalId":"28409230101338","insuranceNumber":"56427011","hireDate":"2018-04-29","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":11,"name":"خالد احمد فتحى محمد","jobTitle":"","nationalId":"28406162103298","insuranceNumber":"59128441","hireDate":"2018-05-07","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":12,"name":"مفرح عبدالله عيد سليمان","jobTitle":"","nationalId":"27305162301095","insuranceNumber":"67472561","hireDate":"2019-02-01","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":13,"name":"عادل عدلى ابراهيم","jobTitle":"","nationalId":"27406152700499","insuranceNumber":"56715915","hireDate":"2019-08-22","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما  مصر الجديدة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":14,"name":"سعد مجدى سعد ابراهيم","jobTitle":"","nationalId":"29304221400397","insuranceNumber":"7174801","hireDate":"2020-02-23","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما  مصر الجديدة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":15,"name":"أحمد محمد عبد الرسول فرج","jobTitle":"","nationalId":"28006270104499","insuranceNumber":"19895074","hireDate":"2020-02-24","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما  مصر الجديدة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":16,"name":"محمد إبراهيم محمد عامر","jobTitle":"","nationalId":"29205231402217","insuranceNumber":"79700876","hireDate":"2020-03-07","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما  مصر الجديدة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":17,"name":"باسم أحمد محمد","jobTitle":"","nationalId":"29004292601136","insuranceNumber":"62234666","hireDate":"2020-03-10","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما  مصر الجديدة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":18,"name":"نهى جمال احمد","jobTitle":"","nationalId":"28711112100325","insuranceNumber":"18456248","hireDate":"2021-05-01","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":19,"name":"دينا عبدالله أحمد","jobTitle":"","nationalId":"29407232100381","insuranceNumber":"77102615","hireDate":"2021-08-01","terminationDate":null,"insuranceStatusRaw":"غير مؤمن (مؤمن عليها فى جهه اخرى)","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":21,"name":"محمد حسين فكار (تعبئة)","jobTitle":"","nationalId":"28607121803019","insuranceNumber":"77297232","hireDate":"2021-11-01","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما  مصر الجديدة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":22,"name":"محمود ايمن الجارحى امين","jobTitle":"","nationalId":"29810132200034","insuranceNumber":"80022202","hireDate":"2021-11-01","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":23,"name":"ايمن خميس عبدالعليم (تعبئة)","jobTitle":"","nationalId":"28906252103532","insuranceNumber":"36992853","hireDate":"2021-11-13","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما  مصر الجديدة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":24,"name":"عبدالكريم سلامه عبدالكريم","jobTitle":"","nationalId":"29307262101093","insuranceNumber":"69722534","hireDate":"2022-01-09","terminationDate":null,"insuranceStatusRaw":"غير مؤمن (مؤمن عليه فى وزارة الصحة)","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":25,"name":"احمد موسى احمد ابراهيم","jobTitle":"","nationalId":"30006202700678","insuranceNumber":"82018531","hireDate":"2022-07-17","terminationDate":null,"insuranceStatusRaw":"غير مؤمن (تكاليف)","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":26,"name":"حسام سعد محمد موسى","jobTitle":"","nationalId":"29711152100895","insuranceNumber":"67928369","hireDate":"2022-07-17","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":27,"name":"عمرو عاصم أحمد عبداللطيف","jobTitle":"","nationalId":"28408182601831","insuranceNumber":"60239179","hireDate":"2023-05-01","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":28,"name":"خليل عبدالرحمن سيد خليل موسى","jobTitle":"","nationalId":"28706251403258","insuranceNumber":"16125041","hireDate":"2023-08-01","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما  مصر الجديدة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":29,"name":"أحمد مصطفى محمد مصطفى سرور","jobTitle":"","nationalId":"29504151403171","insuranceNumber":"66468523","hireDate":"2023-12-01","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما مصر الجديدة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":30,"name":"فاطمة الزهراء محمد سيد امين","jobTitle":"","nationalId":"29706212103445","insuranceNumber":"85930947","hireDate":"2024-02-01","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":31,"name":"أحمد حمدى محمد السيد","jobTitle":"","nationalId":"29409230100297","insuranceNumber":"75797725","hireDate":"2024-04-01","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":32,"name":"محمود محمد السيد عبدالفتاح","jobTitle":"","nationalId":"29706281400079","insuranceNumber":"78410753","hireDate":"2024-04-15","terminationDate":null,"insuranceStatusRaw":"غير مؤمن (مؤمن عليه بجهه عمل اخرى)","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":33,"name":"أحمد عبدالرحمن محمد محمد","jobTitle":"","nationalId":"29110218800059","insuranceNumber":"68356918","hireDate":"2024-06-01","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":34,"name":"عبدالفتاح محمد أسماعيل أحمد","jobTitle":"","nationalId":"29905251200159","insuranceNumber":"86158697","hireDate":"2025-02-25","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":35,"name":"محمد مصطفى عبدالحميد طاحون","jobTitle":"","nationalId":"29803011707631","insuranceNumber":"79324875","hireDate":"2025-08-01","terminationDate":null,"insuranceStatusRaw":"غير مؤمن (مؤمن عليه بجهه عمل اخرى)","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":36,"name":"محمد سلامه فهمى","jobTitle":"","nationalId":"30304290103332","insuranceNumber":"87261776","hireDate":"2026-03-15","terminationDate":null,"insuranceStatusRaw":"غير مؤمن","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":37,"name":"محمد محمود رضوان","jobTitle":"","nationalId":"29612112102293","insuranceNumber":"65033579","hireDate":"2026-03-24","terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":38,"name":"عبدالله مفرح عبدالله عيد","jobTitle":"","nationalId":"30505202302938","insuranceNumber":"86719370","hireDate":null,"terminationDate":null,"insuranceStatusRaw":"غير مؤمن","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":39,"name":"هشام محمد راتب عبدالله","jobTitle":"","nationalId":"29810122301096","insuranceNumber":"88453161","hireDate":null,"terminationDate":null,"insuranceStatusRaw":"مؤمن بيوتك فارما العجوزة","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true}],"Pharma Pal":[{"sr":1,"name":"الشيماء زكريا  محمد","jobTitle":"","nationalId":"28011260100821","insuranceNumber":"59253972","hireDate":"2014-01-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":2,"name":"ايمن احمد عبدالله","jobTitle":"","nationalId":"27912010205671","insuranceNumber":"53012822","hireDate":"2014-01-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":3,"name":"محمد سيد محمود الريس","jobTitle":"","nationalId":"27112200101078","insuranceNumber":"31051830","hireDate":"2015-01-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":4,"name":"عبد السيد حسن احمد","jobTitle":"","nationalId":"26612212800493","insuranceNumber":"46094986","hireDate":"2009-02-01","terminationDate":null,"insuranceStatusRaw":"مؤمن عليه مستلزمات هدى الشهاوى","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":5,"name":"محمد يسرى أحمد مسعود","jobTitle":"","nationalId":"28811190104234","insuranceNumber":"22971593","hireDate":"2014-04-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":6,"name":"محمد يوسف محمد","jobTitle":"","nationalId":"28501281501555","insuranceNumber":"60074980","hireDate":"2014-04-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":7,"name":"احمد رضا احمد","jobTitle":"","nationalId":"28705022701559","insuranceNumber":"15054942","hireDate":"2015-02-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":8,"name":"حسام الدين على محمود","jobTitle":"","nationalId":"28810018800371","insuranceNumber":"68487791","hireDate":"2015-12-01","terminationDate":null,"insuranceStatusRaw":"غير مؤمن (مؤمن عليه فى جهه عمل اخرى)","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":9,"name":"احمد محمود مطر","jobTitle":"","nationalId":"29103210105274","insuranceNumber":"70657750","hireDate":"2016-01-03","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":10,"name":"محمد عزت محمد احمد","jobTitle":"","nationalId":"29309270200699","insuranceNumber":"48143192","hireDate":"2016-12-06","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":11,"name":"اسماء محمود سامى محمد","jobTitle":"","nationalId":"29302181900267","insuranceNumber":"47256116","hireDate":"2017-05-21","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":12,"name":"ايه عبدالنبى جمعه احمد","jobTitle":"","nationalId":"29403170400182","insuranceNumber":"76098594","hireDate":"2018-01-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":13,"name":"حسين محمد حسين حسين","jobTitle":"","nationalId":"29308120101378","insuranceNumber":"79742808","hireDate":"2019-08-18","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":14,"name":"اميرة محمد محمد اسماعيل","jobTitle":"","nationalId":"28911162800823","insuranceNumber":"44987426","hireDate":"2019-08-20","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":15,"name":"هند عصام على الجمال","jobTitle":"","nationalId":"29601241200461","insuranceNumber":"53299878","hireDate":"2020-01-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":16,"name":"سهيله صابر عبدالغنى","jobTitle":"","nationalId":"29508022601701","insuranceNumber":"76551647","hireDate":"2020-01-10","terminationDate":null,"insuranceStatusRaw":"غير مؤمن","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":17,"name":"رانيا عادل واصف","jobTitle":"","nationalId":"29703030101944","insuranceNumber":"82043873","hireDate":"2021-01-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":18,"name":"رحمه ايمن قاسم","jobTitle":"","nationalId":"29806072103207","insuranceNumber":"80541559","hireDate":"2021-06-20","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":19,"name":"اسماء عبدالرحمن حسن","jobTitle":"","nationalId":"29807222103126","insuranceNumber":"79125798","hireDate":"2021-06-20","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":20,"name":"امل عصام الدين موسى","jobTitle":"","nationalId":"29804212600106","insuranceNumber":"81312436","hireDate":"2021-10-06","terminationDate":null,"insuranceStatusRaw":"غير مؤمن (تكليف)","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":21,"name":"محمد احمد على أحمد صالح","jobTitle":"","nationalId":"28911181404092","insuranceNumber":"32024389","hireDate":"2021-12-05","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":22,"name":"ساره محى الدين عبدالغنى","jobTitle":"","nationalId":"29512100200384","insuranceNumber":"80208592","hireDate":"2021-12-26","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":23,"name":"دنيا مدحت محمد نور","jobTitle":"","nationalId":"29706198800847","insuranceNumber":"43164225","hireDate":"2022-08-01","terminationDate":null,"insuranceStatusRaw":"غير مؤمن (تكليف)","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":24,"name":"أسماء محمود عبدالعزيز محمد","jobTitle":"","nationalId":"29902050201786","insuranceNumber":"83102395","hireDate":"2023-01-22","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":25,"name":"احمد محمد عبدالرازق امين","jobTitle":"","nationalId":"29903181600275","insuranceNumber":"74794895","hireDate":"2024-01-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":26,"name":"شروق عبدالله عبدالعاطى على","jobTitle":"","nationalId":"29511151204761","insuranceNumber":"66495488","hireDate":"2024-01-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":27,"name":"إسراء على إبراهيم السيد","jobTitle":"","nationalId":"29910011336286","insuranceNumber":"84142153","hireDate":"2024-08-20","terminationDate":null,"insuranceStatusRaw":"غير مؤمن(part time(","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":28,"name":"هاجر عمرو محمد محمود الريس","jobTitle":"","nationalId":"29912240100361","insuranceNumber":"84463952","hireDate":"2024-12-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":29,"name":"بدرالدين جمال احمد بسيونى","jobTitle":"","nationalId":"30004011805795","insuranceNumber":"86794681","hireDate":"2025-03-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":30,"name":"سارة فارس عبدالحميد محمد","jobTitle":"","nationalId":"29307251403144","insuranceNumber":"71783719","hireDate":"2025-03-02","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":31,"name":"سارة حسن عمر محمود","jobTitle":"","nationalId":"29510010112246","insuranceNumber":"79088105","hireDate":"2025-06-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":32,"name":"نورهان محمد عصام احمد","jobTitle":"","nationalId":"28905152103407","insuranceNumber":"30104676","hireDate":"2025-06-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":33,"name":"مريم منصور اسماعيل اسماعيل","jobTitle":"","nationalId":"30204201101327","insuranceNumber":"86033084","hireDate":"2025-06-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":34,"name":"مصطفى محمد صفالله عبدالخالق","jobTitle":"","nationalId":"29808110102999","insuranceNumber":"65686953","hireDate":"2025-06-16","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":35,"name":"روان عماد عبدالوهاب ياقوت","jobTitle":"","nationalId":"29801010208566","insuranceNumber":"79936463","hireDate":"2025-07-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":36,"name":"كريم محمود عبدالرازق سليمان","jobTitle":"","nationalId":"30112070103653","insuranceNumber":"88021988","hireDate":"2025-08-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":37,"name":"مارينا نتعى فوزى عبدالملاك","jobTitle":"","nationalId":"30212200103744","insuranceNumber":"87412214","hireDate":"2025-08-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":38,"name":"بيتر رزق عياد فوزى","jobTitle":"","nationalId":"30001292201835","insuranceNumber":"84596285","hireDate":"2025-08-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":39,"name":"جيرالدين جورج ميلاد","jobTitle":"","nationalId":"30201101402207","insuranceNumber":"","hireDate":"2025-08-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":40,"name":"سارة السيد محمدفتحى رجب","jobTitle":"","nationalId":"29407060202984","insuranceNumber":"48488588","hireDate":"2025-09-01","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":41,"name":"جهاد محمد جمال محمد محمود","jobTitle":"","nationalId":"29707141300968","insuranceNumber":"78245553","hireDate":"2025-09-14","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":42,"name":"فيولا نبيل فهيم بهنا","jobTitle":"","nationalId":"29705132701221","insuranceNumber":"78214611","hireDate":"2025-09-15","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":43,"name":"نرمين فادى مكين اسطفانوس","jobTitle":"","nationalId":"28911302501341","insuranceNumber":"34482761","hireDate":"2025-09-28","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":44,"name":"ندى ايمن جاب الله فريد","jobTitle":"","nationalId":"30209012719087","insuranceNumber":"87714565","hireDate":"2025-09-28","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":45,"name":"مريم احمد محمود عاطف محمد","jobTitle":"","nationalId":"29805082101681","insuranceNumber":"81461340","hireDate":"2025-09-28","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":46,"name":"محمد احمد محمد عبدالعزيز على المسلمى","jobTitle":"","nationalId":"29404201300072","insuranceNumber":"","hireDate":"2025-11-01","terminationDate":null,"insuranceStatusRaw":"غير مؤمن (تكليف)","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":47,"name":"مريم اشرف سمير شفيق","jobTitle":"","nationalId":"30312202401143","insuranceNumber":"87303917","hireDate":"2025-11-04","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":48,"name":"مايكل نبيل جوده جرجس","jobTitle":"","nationalId":"29701212502372","insuranceNumber":"81543218","hireDate":"2025-11-30","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":49,"name":"ماريا سامى سليم جوهر","jobTitle":"","nationalId":"30211040104106","insuranceNumber":"87719169","hireDate":"2025-12-10","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":50,"name":"اسماء احمد عبدالفتاح ذكى","jobTitle":"","nationalId":"30207161400724","insuranceNumber":"90465698","hireDate":"2026-01-04","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":51,"name":"منار احمد نبيه محمد عزت","jobTitle":"","nationalId":"30104010106022","insuranceNumber":"62875441","hireDate":"2026-01-04","terminationDate":null,"insuranceStatusRaw":"مؤمن فارما بال","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":true},{"sr":52,"name":"عبد المجيد عبدالله عبدالمجيد","jobTitle":"","nationalId":"30211122105216","insuranceNumber":"","hireDate":"2026-05-04","terminationDate":null,"insuranceStatusRaw":"غير مؤمن","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":53,"name":"حبيبة محمد شحاتة محمد صقر","jobTitle":"","nationalId":"29909091609689","insuranceNumber":"80838455","hireDate":"2026-07-05","terminationDate":null,"insuranceStatusRaw":"غير مؤمن","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":54,"name":"غاده ايمن يس عبدالفتاح","jobTitle":"","nationalId":"30310150105947","insuranceNumber":"","hireDate":"2026-07-05","terminationDate":null,"insuranceStatusRaw":"غير مؤمن","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":55,"name":"محمود سامى محمود زيدان","jobTitle":"","nationalId":"29701170201172","insuranceNumber":"","hireDate":"2026-07-05","terminationDate":null,"insuranceStatusRaw":"غير مؤمن","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":56,"name":"ديما ابراهيم فتحى عبدالله","jobTitle":"","nationalId":"30204021700087","insuranceNumber":"","hireDate":"2026-07-05","terminationDate":null,"insuranceStatusRaw":"غير مؤمن","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false},{"sr":57,"name":"حسام جابر سيد","jobTitle":"","nationalId":"29807272401632","insuranceNumber":"","hireDate":"2026-07-05","terminationDate":null,"insuranceStatusRaw":"غير مؤمن","officeBranch":"","contractType":"","contributionPeriod":"","leaveBalance":null,"documentsNote":"","note1":"","note2":"","insured":false}]};
 
 const COMPANY_COLORS = ['#0E4F49','#8B4B9C','#B3661E','#1D6FA5','#6B7C1D','#A5303F','#3C6E71','#9C4221'];
-const DB_VERSION = 7;
+const DB_VERSION = 9;
 const STORAGE_KEY = 'hris_data_v1';
 
 /* ===================== إعدادات Supabase (قاعدة البيانات المشتركة) =====================
@@ -832,6 +839,46 @@ function contractStatusBadge(e){
   if(ci) return '<span class="badge warn">باقي '+ci.days+' يوم على انتهاء العقد</span>';
   return '<span class="badge ok">العقد ساري</span>';
 }
+function medicalCardStatusOptions(cur){
+  const opts = ['','استخرج','لم يستخرج'];
+  return opts.map(function(o){ return '<option value="'+o+'"'+(cur===o?' selected':'')+'>'+(o||'— غير محدد —')+'</option>'; }).join('');
+}
+function medicalCardAlertInfo(e){
+  if(!e || !e.medicalCardExpiryDate || empStatus(e)==='terminated') return null;
+  const days = daysUntil(e.medicalCardExpiryDate);
+  if(days===null) return null;
+  if(days < 0) return {expired:true, days:days};
+  if(days <= 90) return {expired:false, days:days};
+  return null;
+}
+function medicalCardStatusBadge(e){
+  if(!e.medicalCardExpiryDate) return '';
+  const ci = medicalCardAlertInfo(e);
+  if(ci && ci.expired) return '<span class="badge no">البطاقة العلاجية منتهية منذ '+Math.abs(ci.days)+' يوم</span>';
+  if(ci) return '<span class="badge warn">باقي '+ci.days+' يوم على انتهاء البطاقة العلاجية</span>';
+  return '<span class="badge ok">البطاقة العلاجية سارية</span>';
+}
+const DOC_CHECKLIST_ITEMS = [
+  ['qualification','المؤهل الدراسي'],
+  ['conscription','موقف التجنيد'],
+  ['birthCertificate','شهادة الميلاد'],
+  ['photos','صور شخصية'],
+  ['workBooklet','كعب عمل'],
+  ['criminalRecord','فيش'],
+  ['insuranceForm','نموذج تأميني'],
+  ['form111','نموذج 111']
+];
+function docChecklistRowHtml(key,label,cur){
+  return '<div class="checklist-row"><span class="cl-label">'+escapeHtml(label)+'</span>'
+    + '<span class="cl-opts">'
+    + '<label><input type="checkbox" data-checklist="'+key+'" data-checklist-val="yes"'+(cur==='yes'?' checked':'')+'> متوفر</label>'
+    + '<label><input type="checkbox" data-checklist="'+key+'" data-checklist-val="no"'+(cur==='no'?' checked':'')+'> غير متوفر</label>'
+    + '</span></div>';
+}
+function docChecklistHtml(e){
+  const checklist = e.docChecklist || {};
+  return DOC_CHECKLIST_ITEMS.map(function(it){ return docChecklistRowHtml(it[0], it[1], checklist[it[0]]||''); }).join('');
+}
 function fmtSize(n){
   if(!n) return '';
   if(n<1024) return n+' B';
@@ -881,9 +928,15 @@ function buildSeedState(){
         contractType: r.contractType || '',
         contractEndDate: r.contractEndDate || null,
         contributionPeriod: r.contributionPeriod || '',
+        medicalCardStatus: r.medicalCardStatus || '',
+        medicalCardNumber: r.medicalCardNumber || '',
+        medicalCardIssuer: r.medicalCardIssuer || '',
+        medicalCardIssueDate: r.medicalCardIssueDate || null,
+        medicalCardExpiryDate: r.medicalCardExpiryDate || null,
         leaveBalance: (r.leaveBalance===null||r.leaveBalance===undefined||r.leaveBalance==='') ? null : Number(r.leaveBalance),
         leaveLog: [],
         documents: [],
+        docChecklist: r.docChecklist || {},
         notes: [r.note1, r.note2, r.documentsNote].filter(Boolean).join(' / '),
         salary: null, salaryLog: [], historyLog: [], probationMonths: null,
         createdAt: new Date().toISOString(),
@@ -940,6 +993,22 @@ function runMigrations(data){
   if(data.version < 7){
     if(!data.customForms || Array.isArray(data.customForms)) data.customForms = {};
     data.version = 7;
+  }
+  if(data.version < 8){
+    (data.employees||[]).forEach(function(e){
+      if(e.medicalCardStatus===undefined) e.medicalCardStatus = '';
+      if(e.medicalCardNumber===undefined) e.medicalCardNumber = '';
+      if(e.medicalCardIssuer===undefined) e.medicalCardIssuer = '';
+      if(e.medicalCardIssueDate===undefined) e.medicalCardIssueDate = null;
+      if(e.medicalCardExpiryDate===undefined) e.medicalCardExpiryDate = null;
+    });
+    data.version = 8;
+  }
+  if(data.version < 9){
+    (data.employees||[]).forEach(function(e){
+      if(!e.docChecklist || typeof e.docChecklist !== 'object') e.docChecklist = {};
+    });
+    data.version = 9;
   }
   /* مساحة لإضافة ترحيلات مستقبلية عند تغيير هيكل البيانات:
      if(data.version < 4){ ... تحويل البيانات ... data.version = 4; } */
@@ -1001,7 +1070,8 @@ function emptyEmployee(){
     sr:null, name:'', jobTitle:'', department:'', division:'', directManager:'', nationalId:'', insuranceNumber:'', phone:'', address:'',
     birthDate:'', hireDate:'', terminationDate:'', terminationReason:'', insuranceDate:'',
     insured:true, insuranceEntity:'', officeBranch:'', contractType:'', contractEndDate:'', contributionPeriod:'',
-    leaveBalance:null, leaveLog:[], documents:[], notes:'', photo:null,
+    medicalCardStatus:'', medicalCardNumber:'', medicalCardIssuer:'', medicalCardIssueDate:'', medicalCardExpiryDate:'',
+    leaveBalance:null, leaveLog:[], documents:[], docChecklist:{}, notes:'', photo:null,
     salary:null, salaryLog:[], historyLog:[], probationMonths:3
   };
 }
@@ -1015,6 +1085,11 @@ function computeAlerts(){
     const ci = contractAlertInfo(e);
     if(ci && ci.expired){ alerts.push({sev:'high', emp:e, tab:'insurance', msg:'انتهى تاريخ العقد منذ '+Math.abs(ci.days)+' يوم ولم يُجدَّد'}); }
     else if(ci){ alerts.push({sev:'low', emp:e, tab:'insurance', msg:'العقد قريب من الانتهاء (باقي '+ci.days+' يوم)'}); }
+    if(e.medicalCardStatus==='استخرج' && !e.medicalCardNumber){ alerts.push({sev:'low', emp:e, tab:'insurance', msg:'مسجل كمستخرج للبطاقة العلاجية لكن بدون رقم بطاقة'}); }
+    else if(!e.medicalCardStatus){ alerts.push({sev:'low', emp:e, tab:'insurance', msg:'حالة البطاقة العلاجية غير محددة'}); }
+    const mci = medicalCardAlertInfo(e);
+    if(mci && mci.expired){ alerts.push({sev:'high', emp:e, tab:'insurance', msg:'انتهت البطاقة العلاجية منذ '+Math.abs(mci.days)+' يوم ولم تُجدَّد'}); }
+    else if(mci){ alerts.push({sev:'low', emp:e, tab:'insurance', msg:'البطاقة العلاجية قريبة من الانتهاء (باقي '+mci.days+' يوم)'}); }
     if(!e.jobTitle){ alerts.push({sev:'low', emp:e, msg:'المسمى الوظيفي غير محدد'}); }
     if(e.leaveBalance===null || e.leaveBalance===undefined){ alerts.push({sev:'low', emp:e, tab:'leave', msg:'رصيد الإجازة غير مسجل'}); }
     else if(e.leaveBalance<0){ alerts.push({sev:'high', emp:e, tab:'leave', msg:'رصيد إجازة سالب ('+e.leaveBalance+' يوم)'}); }
@@ -1679,6 +1754,7 @@ function employeeInsuranceForm(e){
     ? (e.hireDate ? (cp || 'غير محسوبة (تأكد من تاريخ التعيين)') : 'أدخل تاريخ التعيين في البيانات الأساسية أولاً')
     : 'لا يوجد اشتراك — الموظف غير مؤمَّن';
   const badge = contractStatusBadge(e);
+  const medBadge = medicalCardStatusBadge(e);
   return '<div class="toggle-row"><div><b>حالة التأمين</b><div class="hint">مؤمَّن أو غير مؤمَّن حالياً</div></div>'
     + '<label class="switch"><input type="checkbox" id="f_insured" '+(e.insured?'checked':'')+'><span class="track"></span><span class="thumb"></span></label></div>'
     + '<div class="form-grid" style="margin-top:12px">'
@@ -1689,6 +1765,16 @@ function employeeInsuranceForm(e){
     + selectField('نوع العقد','f_contractType', contractOptions(e.contractType))
     + '<div class="field"><label>تاريخ نهاية العقد</label><input id="f_contractEndDate" type="date" value="'+escapeHtml(e.contractEndDate||'')+'">'
     + (badge ? '<div class="hint" style="margin-top:6px">'+badge+'</div>' : '<div class="hint">سيتم تنبيهك تلقائياً قبل الانتهاء بـ ٣ أشهر</div>')
+    + '</div>'
+    + '</div>'
+    + '<h3 style="margin-top:18px;font-size:13px">البطاقة العلاجية</h3>'
+    + '<div class="form-grid" style="margin-top:8px">'
+    + selectField('حالة البطاقة العلاجية','f_medicalCardStatus', medicalCardStatusOptions(e.medicalCardStatus))
+    + field('رقم البطاقة العلاجية','f_medicalCardNumber','text',e.medicalCardNumber)
+    + field('جهة الإصدار','f_medicalCardIssuer','text',e.medicalCardIssuer)
+    + field('تاريخ الإصدار','f_medicalCardIssueDate','date',e.medicalCardIssueDate)
+    + '<div class="field"><label>تاريخ الانتهاء</label><input id="f_medicalCardExpiryDate" type="date" value="'+escapeHtml(e.medicalCardExpiryDate||'')+'">'
+    + (medBadge ? '<div class="hint" style="margin-top:6px">'+medBadge+'</div>' : '')
     + '</div>'
     + '</div>';
 }
@@ -1725,7 +1811,10 @@ function employeeDocsTab(e){
       + '<button class="icon-btn" data-doc-view="'+d.id+'" title="عرض">↗</button>'
       + '<button class="icon-btn" data-doc-del="'+d.id+'" title="حذف">✕</button></div>';
   }).join('') || '<div class="empty-note">لا توجد مستندات مرفقة</div>';
-  return '<div class="doc-list">'+docs+'</div>'
+  return '<h3 style="font-size:13px;margin-bottom:8px">استيفاء المستندات</h3>'
+    + '<div class="checklist">'+docChecklistHtml(e)+'</div>'
+    + '<h3 style="font-size:13px;margin-bottom:8px">المستندات المرفوعة</h3>'
+    + '<div class="doc-list">'+docs+'</div>'
     + '<div class="upload-drop" id="docUploadZone">اضغط لرفع مستند (PDF أو صورة، أقل من 10 ميجابايت)</div>'
     + '<div class="hint" style="margin-top:8px">المستندات تُخزَّن على تخزين سحابي مشترك (Supabase Storage) — متاحة لكل المستخدمين من أي جهاز</div>';
 }
@@ -1789,6 +1878,11 @@ function syncFormToDraft(e){
     e.officeBranch = val('f_officeBranch');
     e.contractType = val('f_contractType');
     e.contractEndDate = val('f_contractEndDate') || null;
+    e.medicalCardStatus = val('f_medicalCardStatus');
+    e.medicalCardNumber = val('f_medicalCardNumber');
+    e.medicalCardIssuer = val('f_medicalCardIssuer');
+    e.medicalCardIssueDate = val('f_medicalCardIssueDate') || null;
+    e.medicalCardExpiryDate = val('f_medicalCardExpiryDate') || null;
   } else if(UI.modalTab==='leave'){
     const b = val('f_leaveBalance');
     e.leaveBalance = (b==='') ? null : Number(b);
@@ -1874,6 +1968,21 @@ function bindModalEvents(e, isNew){
       const real = STATE.employees.find(function(x){ return x.id===e.id; });
       const d = real ? real.documents.find(function(x){ return x.id===b.dataset.docView; }) : null;
       if(d) window.open(d.url || d.dataUrl, '_blank');
+    });
+  });
+  document.querySelectorAll('[data-checklist]').forEach(function(cb){
+    cb.addEventListener('change', function(){
+      const real = STATE.employees.find(function(x){ return x.id===e.id; });
+      if(!real) return;
+      if(!real.docChecklist) real.docChecklist = {};
+      const key = cb.dataset.checklist;
+      const optVal = cb.dataset.checklistVal;
+      if(cb.checked) real.docChecklist[key] = optVal;
+      else if(real.docChecklist[key]===optVal) real.docChecklist[key] = '';
+      real.updatedAt = new Date().toISOString();
+      e.docChecklist = real.docChecklist;
+      persistState(STATE);
+      renderEmployeeModal();
     });
   });
 }
@@ -2245,8 +2354,9 @@ function exportExcel(){
   const wb = XLSX.utils.book_new();
   companies().forEach(function(co){
     const emps = employeesOf(co.id).slice().sort(function(a,b){ return (a.sr||0)-(b.sr||0); });
-    const aoa = [['S.R','Name','Job Designation','ID','Insurance number','Hire Date','Termination Date','Insured employee & Uninsured employee','Social Insurance Office Branch','Employment Contract','Insurance Contribution Period','Annual Leave Balance','Employee Documents','Note','Department','Division','Direct Manager','Phone','Address','Insurance Date','Contract End Date','Birth Date','Termination Reason','Salary','Probation Months']];
+    const aoa = [['S.R','Name','Job Designation','ID','Insurance number','Hire Date','Termination Date','Insured employee & Uninsured employee','Social Insurance Office Branch','Employment Contract','Insurance Contribution Period','Annual Leave Balance','Employee Documents','Note','Department','Division','Direct Manager','Phone','Address','Insurance Date','Contract End Date','Birth Date','Termination Reason','Salary','Probation Months','Medical Card Status','Medical Card Number','Medical Card Issuer','Medical Card Issue Date','Medical Card Expiry Date','Qualification Doc','Conscription Doc','Birth Certificate Doc','Photos Doc','Work Booklet Doc','Criminal Record Doc','Insurance Form Doc','Form 111 Doc']];
     emps.forEach(function(e,i){
+      const cl = e.docChecklist || {};
       aoa.push([
         e.sr || (i+1), e.name, e.jobTitle, e.nationalId, e.insuranceNumber,
         e.hireDate||'', e.terminationDate||'',
@@ -2257,11 +2367,12 @@ function exportExcel(){
         e.notes,
         e.department||'', e.division||'', e.directManager||'', e.phone||'', e.address||'', e.insuranceDate||'', e.contractEndDate||'',
         e.birthDate||'', e.terminationReason||'',
-        (e.salary===null||e.salary===undefined)?'':e.salary, (e.probationMonths===null||e.probationMonths===undefined)?'':e.probationMonths
-      ]);
+        (e.salary===null||e.salary===undefined)?'':e.salary, (e.probationMonths===null||e.probationMonths===undefined)?'':e.probationMonths,
+        e.medicalCardStatus||'', e.medicalCardNumber||'', e.medicalCardIssuer||'', e.medicalCardIssueDate||'', e.medicalCardExpiryDate||''
+      ].concat(DOC_CHECKLIST_ITEMS.map(function(it){ return checklistValToLabel(cl[it[0]]); })));
     });
     const ws = XLSX.utils.aoa_to_sheet(aoa);
-    ws['!cols'] = [{wch:5},{wch:26},{wch:18},{wch:16},{wch:14},{wch:12},{wch:12},{wch:30},{wch:18},{wch:14},{wch:14},{wch:12},{wch:14},{wch:20},{wch:16},{wch:16},{wch:20},{wch:14},{wch:26},{wch:12},{wch:14},{wch:12},{wch:14},{wch:12},{wch:10}];
+    ws['!cols'] = [{wch:5},{wch:26},{wch:18},{wch:16},{wch:14},{wch:12},{wch:12},{wch:30},{wch:18},{wch:14},{wch:14},{wch:12},{wch:14},{wch:20},{wch:16},{wch:16},{wch:20},{wch:14},{wch:26},{wch:12},{wch:14},{wch:12},{wch:14},{wch:12},{wch:10},{wch:16},{wch:16},{wch:18},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14}];
     XLSX.utils.book_append_sheet(wb, ws, sanitizeSheetName(co.name));
   });
   XLSX.writeFile(wb, 'نظام_الموارد_البشرية_'+new Date().toISOString().slice(0,10)+'.xlsx');
@@ -2275,6 +2386,13 @@ function parseExcelDate(v){
   const d = new Date(s);
   if(!isNaN(d.getTime())) return d.toISOString().slice(0,10);
   return null;
+}
+function checklistValToLabel(v){ return v==='yes' ? 'متوفر' : (v==='no' ? 'غير متوفر' : ''); }
+function labelToChecklistVal(s){
+  s = String(s||'').trim();
+  if(!s) return '';
+  if(s.indexOf('غير')===0) return 'no';
+  return 'yes';
 }
 function importExcelFile(file){
   const reader = new FileReader();
@@ -2325,6 +2443,16 @@ function importExcelFile(file){
           if(r[22]) rec.terminationReason = String(r[22]);
           if(r[23]!==undefined && r[23]!==null && r[23]!=='') rec.salary = Number(r[23]);
           if(r[24]!==undefined && r[24]!==null && r[24]!=='') rec.probationMonths = Number(r[24]);
+          if(r[25]) rec.medicalCardStatus = String(r[25]);
+          rec.medicalCardNumber = String(r[26]||rec.medicalCardNumber||'');
+          rec.medicalCardIssuer = String(r[27]||rec.medicalCardIssuer||'');
+          rec.medicalCardIssueDate = parseExcelDate(r[28]) || rec.medicalCardIssueDate;
+          rec.medicalCardExpiryDate = parseExcelDate(r[29]) || rec.medicalCardExpiryDate;
+          if(!rec.docChecklist) rec.docChecklist = {};
+          DOC_CHECKLIST_ITEMS.forEach(function(it,idx){
+            const raw = r[30+idx];
+            if(raw!==undefined && raw!==null && String(raw).trim()!=='') rec.docChecklist[it[0]] = labelToChecklistVal(raw);
+          });
           rec.updatedAt = new Date().toISOString();
           if(existing){ updated++; }
           else{
@@ -2393,10 +2521,19 @@ function employeeProfilePrintHtml(e,co){
     + gridItem('نوع العقد', e.contractType)
     + gridItem('تاريخ نهاية العقد', e.contractEndDate)
     + gridItem('مدة الاشتراك', calcContributionPeriod(e))
+    + gridItem('حالة البطاقة العلاجية', e.medicalCardStatus)
+    + gridItem('رقم البطاقة العلاجية', e.medicalCardNumber)
+    + gridItem('جهة إصدار البطاقة العلاجية', e.medicalCardIssuer)
+    + gridItem('تاريخ إصدار البطاقة العلاجية', e.medicalCardIssueDate)
+    + gridItem('تاريخ انتهاء البطاقة العلاجية', e.medicalCardExpiryDate)
     + gridItem('رصيد الإجازة', (e.leaveBalance===null||e.leaveBalance===undefined)?'غير مسجل':e.leaveBalance+' يوم')
     + gridItem('الراتب الحالي', (e.salary===null||e.salary===undefined||e.salary==='')?'غير مسجل':Number(e.salary).toLocaleString('ar-EG')+' جنيه')
     + gridItem('فترة الاختبار', probationInfo(e) ? ('حتى '+probationInfo(e).endDate) : (e.probationMonths?'انتهت':'—'))
     + gridItem('عدد المستندات المرفقة', e.documents.length)
+    + '</div>'
+    + '<div class="section-title" style="margin:14px 0 8px">استيفاء المستندات</div>'
+    + '<div class="grid">'
+    + DOC_CHECKLIST_ITEMS.map(function(it){ return gridItem(it[1], (e.docChecklist&&e.docChecklist[it[0]])==='yes' ? 'متوفر' : ((e.docChecklist&&e.docChecklist[it[0]])==='no' ? 'غير متوفر' : '—')); }).join('')
     + '</div>'
     + (e.address ? '<div style="margin-bottom:8px"><b>العنوان:</b> '+escapeHtml(e.address)+'</div>' : '')
     + (e.notes ? '<div><b>ملاحظات:</b> '+escapeHtml(e.notes)+'</div>' : '');
